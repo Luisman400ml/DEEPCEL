@@ -1,0 +1,2 @@
+ERROR: Unable to configure the FPGA.
+The number of usable registers does not match the JTAG module on the FPGA. Make sure the right FPGA bitstream is being loaded.

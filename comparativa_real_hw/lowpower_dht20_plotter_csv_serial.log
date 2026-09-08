@@ -1,0 +1,6 @@
+Build: Quartus 25.1 lowpower, DHT20 plotter/CSV
+SELFTEST PASS vectors=128 reads=256 failures=0
+record,time_ms,temperature_c,humidity_rh_pct,prediction_c
+DATA,45349,26.8238,52.5904,26.5313
+DATA,55349,26.8242,52.6360,26.5313
+DATA,65349,26.8314,52.8087,26.5391

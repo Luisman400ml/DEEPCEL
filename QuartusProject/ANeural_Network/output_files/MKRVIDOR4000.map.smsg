@@ -1,0 +1,1 @@
+Warning (10268): Verilog HDL information at neuron.v(15): always construct contains both blocking and non-blocking assignments File: C:/Users/chani/Desktop/Temperature_ANN/Arduino_and_Quartus_template/QuartusProject/ANeural_Network/neuron.v Line: 15

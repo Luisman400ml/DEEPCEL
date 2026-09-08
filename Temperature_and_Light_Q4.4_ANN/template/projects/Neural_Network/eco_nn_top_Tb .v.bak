@@ -1,0 +1,55 @@
+
+//`timescale 1ns / 1ps  // Dit au simulateur : #1 = 1 nanoseconde
+
+module eco_nn_top_Tb ();
+
+
+reg   clk,reset,data_ready;
+reg   [15:0] sensor_in;
+wire  [15:0] prediction ; 
+
+
+
+//inatanciation du composant à tester 
+
+eco_nn_top UUT (
+     .clk(clk),
+     .reset(reset),
+     .sensor_in(sensor_in),    
+     .data_ready(data_ready),
+     .prediction(prediction)
+);
+
+//generation du signal de clock qui change d'etat tous les 5ns
+
+always begin
+  #5 clk = ~clk;
+end 
+
+
+
+//stimulis generation
+initial begin
+   clk=0;
+	reset =1;
+	data_ready=0;
+	sensor_in = 16'h1900; // Étape 1 : 25.00
+	#5 
+	data_ready =1;
+	#10 data_ready=0;
+ 
+	#10 sensor_in = 16'h190F; // Étape 2 : 25.06
+	    data_ready =1;
+	#10 data_ready=0;
+   #10 sensor_in = 16'h191E; // Étape 3 : 25.12
+	    data_ready =1;
+	#10 data_ready=0;
+   #10 sensor_in = 16'h192E; // Étape 4 : 25.18
+	    data_ready=1;
+   #10 data_ready 0;
+   #100
+$finish;
+end 
+endmodule
+
+  

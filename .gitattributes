@@ -1,0 +1,16 @@
+* text=auto
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.keras binary
+*.sof binary
+*.pof binary
+*.rbf binary
+*.jbc binary
+*.jam binary
+*.ttf binary
+*.qdf binary
+*.qws binary
+

@@ -1,0 +1,4 @@
+Build: Quartus 25.1 lowpower light Q4.4, DHT20 humidity, Grove Light Sensor on A2
+SELFTEST PASS multisensor_q4_4 vectors=128 reads=512 failures=0
+DHT20 read error: -14 (read timeout)
+Temp0_C:27.21	Temp1_C:27.22	Temp2_C:27.22	Temp3_C:27.23	Luz0_ADC:879	Luz1_ADC:882	Luz2_ADC:693	Luz3_ADC:876	PredTemp_C:25.45	PredLuz_model:380	Humedad_pct:52.02

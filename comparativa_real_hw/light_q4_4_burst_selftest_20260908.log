@@ -1,0 +1,34 @@
+Build: Quartus 25.1 lowpower light Q4.4 burst, DHT20 humidity, Grove Light Sensor on A2
+SELFTEST PASS multisensor_q4_4 vectors=128 reads=512 failures=0
+TemperatureHistory_C:[27.56,27.57,27.57,27.57]
+LightHistory_ADC:[682,735,884,887]
+Temperature_C:27.57
+Light_ADC:887
+PredictionTemperature_C:24.61
+PredictionLight_model:326
+Humidity_pct:52.30
+
+TemperatureHistory_C:[27.57,27.57,27.57,27.58]
+LightHistory_ADC:[735,884,887,888]
+Temperature_C:27.58
+Light_ADC:888
+PredictionTemperature_C:25.45
+PredictionLight_model:380
+Humidity_pct:52.18
+
+TemperatureHistory_C:[27.57,27.57,27.58,27.60]
+LightHistory_ADC:[884,887,888,900]
+Temperature_C:27.60
+Light_ADC:900
+PredictionTemperature_C:24.61
+PredictionLight_model:434
+Humidity_pct:52.14
+
+TemperatureHistory_C:[27.57,27.58,27.60,27.59]
+LightHistory_ADC:[887,888,900,904]
+Temperature_C:27.59
+Light_ADC:904
+PredictionTemperature_C:24.61
+PredictionLight_model:704
+Humidity_pct:52.20
+

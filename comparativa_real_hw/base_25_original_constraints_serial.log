@@ -1,0 +1,21 @@
+FPGA successfully configured!
+Build: Quartus 25.1 base, original pin constraints
+SELFTEST PASS vectors=128 reads=256 failures=0
+DHT20 sensor detected.
+Build: Quartus 25.1 base, original pin constraints
+SELFTEST PASS vectors=128 reads=256 failures=0
+4 last  temperature history : [ 0.00, 0.00, 0.00, 27.43 ]
+
+FPGA prediction:27.14 °C
+------------------------------------
+ 
+4 last  temperature history : [ 0.00, 0.00, 27.43, 27.45 ]
+
+FPGA prediction:27.14 °C
+------------------------------------
+ 
+4 last  temperature history : [ 0.00, 27.43, 27.45, 27.44 ]
+
+FPGA prediction:27.14 °C
+------------------------------------
+ 

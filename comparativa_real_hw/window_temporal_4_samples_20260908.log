@@ -1,0 +1,5 @@
+Build: Quartus 25.1 lowpower, DHT20 plotter/CSV
+SELFTEST PASS vectors=128 reads=256 failures=0
+Temperatura_C:27.04	Prediccion_C:4.74	Humedad_pct:52.48
+Temperatura_C:27.02	Prediccion_C:24.41	Humedad_pct:52.48
+Temperatura_C:27.05	Prediccion_C:21.11	Humedad_pct:52.45

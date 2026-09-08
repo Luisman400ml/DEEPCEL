@@ -1,0 +1,12 @@
+Power Analyzer Status : Successful - Tue Sep  8 15:46:38 2026
+Quartus Prime Version : 25.1std.0 Build 1129 10/21/2025 SC Lite Edition
+Revision Name : MKRVIDOR4000
+Top-level Entity Name : MKRVIDOR4000_top
+Family : Cyclone 10 LP
+Device : 10CL016YU256C8G
+Power Models : Final
+Total Thermal Power Dissipation : 212.19 mW
+Core Dynamic Thermal Power Dissipation : 24.23 mW
+Core Static Thermal Power Dissipation : 52.71 mW
+I/O Thermal Power Dissipation : 135.25 mW
+Power Estimation Confidence : Low: user provided insufficient toggle rate data

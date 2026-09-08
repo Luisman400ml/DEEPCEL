@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Tue Sep  8 14:26:51 2026
+Quartus Prime Version : 25.1std.0 Build 1129 10/21/2025 SC Lite Edition
+Revision Name : MKRVIDOR4000
+Top-level Entity Name : MKRVIDOR4000_top
+Family : Cyclone 10 LP
+Total logic elements : 3,329
+    Total combinational functions : 3,282
+    Dedicated logic registers : 362
+Total registers : 362
+Total pins : 131
+Total virtual pins : 0
+Total memory bits : 0
+Embedded Multiplier 9-bit elements : 0
+Total PLLs : 1

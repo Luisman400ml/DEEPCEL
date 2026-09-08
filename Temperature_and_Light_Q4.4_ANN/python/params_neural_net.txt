@@ -1,0 +1,80 @@
+// =====================================================================
+// Weights and biases converted for FPGA multi-sensor network (Q8.8 format)
+// Inputs: 0-3 = Temp, 4-7 = Light | Outputs: 0 = Temp, 1 = Light
+// Source Model: model_multisensor_fpga.keras
+// =====================================================================
+
+// --- HIDDEN_LAYER ---
+// Neurone 0
+  assign w_hidden_layer[0] [0:7] = '{ 16'hFB, 16'hFD, 16'h09, 16'h05, 16'hFF, 16'hFF, 16'hFF, 16'hFE };
+  assign b_hidden_layer[0] = 16'h03;
+
+// Neurone 1
+  assign w_hidden_layer[1] [0:7] = '{ 16'hFD, 16'h02, 16'hFE, 16'h05, 16'hF9, 16'hFB, 16'h03, 16'hFC };
+  assign b_hidden_layer[1] = 16'hFF;
+
+// Neurone 2
+  assign w_hidden_layer[2] [0:7] = '{ 16'h07, 16'h05, 16'h03, 16'h02, 16'hFE, 16'h00, 16'hFE, 16'h04 };
+  assign b_hidden_layer[2] = 16'hFF;
+
+// Neurone 3
+  assign w_hidden_layer[3] [0:7] = '{ 16'hFD, 16'h05, 16'h05, 16'hF9, 16'hFB, 16'h01, 16'h02, 16'hFF };
+  assign b_hidden_layer[3] = 16'h00;
+
+// Neurone 4
+  assign w_hidden_layer[4] [0:7] = '{ 16'h08, 16'h03, 16'hFD, 16'hFE, 16'h03, 16'hFA, 16'h07, 16'hF9 };
+  assign b_hidden_layer[4] = 16'h02;
+
+// Neurone 5
+  assign w_hidden_layer[5] [0:7] = '{ 16'h02, 16'hF9, 16'hFC, 16'h02, 16'hF9, 16'h06, 16'h06, 16'hF9 };
+  assign b_hidden_layer[5] = 16'h00;
+
+// Neurone 6
+  assign w_hidden_layer[6] [0:7] = '{ 16'h05, 16'h02, 16'hFD, 16'h08, 16'h00, 16'h09, 16'h03, 16'h00 };
+  assign b_hidden_layer[6] = 16'h01;
+
+// Neurone 7
+  assign w_hidden_layer[7] [0:7] = '{ 16'hFD, 16'h05, 16'hFA, 16'hFF, 16'h03, 16'h03, 16'hFF, 16'h05 };
+  assign b_hidden_layer[7] = 16'h01;
+
+// Neurone 8
+  assign w_hidden_layer[8] [0:7] = '{ 16'h00, 16'h02, 16'h00, 16'h01, 16'hFE, 16'h03, 16'h05, 16'h00 };
+  assign b_hidden_layer[8] = 16'hFF;
+
+// Neurone 9
+  assign w_hidden_layer[9] [0:7] = '{ 16'h02, 16'h02, 16'h00, 16'hFC, 16'hFC, 16'h09, 16'h06, 16'h00 };
+  assign b_hidden_layer[9] = 16'h01;
+
+// Neurone 10
+  assign w_hidden_layer[10] [0:7] = '{ 16'h02, 16'hFF, 16'hFA, 16'h08, 16'h00, 16'hFA, 16'h04, 16'h08 };
+  assign b_hidden_layer[10] = 16'h01;
+
+// Neurone 11
+  assign w_hidden_layer[11] [0:7] = '{ 16'hF9, 16'hFB, 16'h05, 16'hFA, 16'h03, 16'h02, 16'h02, 16'hFD };
+  assign b_hidden_layer[11] = 16'hFF;
+
+// Neurone 12
+  assign w_hidden_layer[12] [0:7] = '{ 16'hF9, 16'hFD, 16'h02, 16'hF8, 16'h05, 16'h06, 16'h01, 16'hF9 };
+  assign b_hidden_layer[12] = 16'hFE;
+
+// Neurone 13
+  assign w_hidden_layer[13] [0:7] = '{ 16'h00, 16'h06, 16'hFA, 16'hFB, 16'h00, 16'hFF, 16'hFE, 16'hFA };
+  assign b_hidden_layer[13] = 16'h00;
+
+// Neurone 14
+  assign w_hidden_layer[14] [0:7] = '{ 16'hF9, 16'hFA, 16'h04, 16'h05, 16'hFC, 16'h06, 16'hFE, 16'h01 };
+  assign b_hidden_layer[14] = 16'h00;
+
+// Neurone 15
+  assign w_hidden_layer[15] [0:7] = '{ 16'h01, 16'h07, 16'hFD, 16'h03, 16'h01, 16'h04, 16'hFF, 16'h08 };
+  assign b_hidden_layer[15] = 16'h01;
+
+// --- OUTPUT_LAYER ---
+// Neurone 0
+  assign w_output_layer[0] [0:15] = '{ 16'h05, 16'hF7, 16'h06, 16'h05, 16'h04, 16'h04, 16'h00, 16'hF8, 16'h06, 16'hFE, 16'h02, 16'hFE, 16'h04, 16'h01, 16'hF7, 16'h07 };
+  assign b_output_layer[0] = 16'hFF;
+
+// Neurone 1
+  assign w_output_layer[1] [0:15] = '{ 16'hF8, 16'h07, 16'h00, 16'hF8, 16'hFD, 16'hF9, 16'h04, 16'h07, 16'hFB, 16'h04, 16'h05, 16'h00, 16'h01, 16'h06, 16'hF8, 16'h04 };
+  assign b_output_layer[1] = 16'h01;
+

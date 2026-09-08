@@ -1,0 +1,3 @@
+DHT20 read error: -14 (read timeout)
+TemperatureHistory_C:[27.32,27.30,27.29,27.29]	LightHistory_ADC:[679,732,866,884]	Temperature_C:27.29	Light_ADC:884	PredictionTemperature_C:24.61	PredictionLight_model:488	Humidity_pct:52.12
+TemperatureHistory_C:[27.30,27.29,27.29,27.29]	LightHistory_ADC:[732,866,884,888]	Temperature_C:27.29	Light_ADC:888	PredictionTemperature_C:24.61	PredictionLight_model:542	Humidity_pct:52.19

@@ -1,0 +1,17 @@
+FPGA successfully configured!
+DHT20 sensor detected.
+4 last  temperature history : [ 0.00, 0.00, 0.00, 26.59 ]
+
+FPGA prediction:4.67 ??C
+------------------------------------
+ 
+4 last  temperature history : [ 0.00, 0.00, 26.59, 26.57 ]
+
+FPGA prediction:24.01 ??C
+------------------------------------
+ 
+4 last  temperature history : [ 0.00, 26.59, 26.57, 26.59 ]
+
+FPGA prediction:20.75 ??C
+------------------------------------
+ 
