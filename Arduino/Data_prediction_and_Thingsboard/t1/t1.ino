@@ -1,136 +1,207 @@
 #include "FPGA.h"
 #include "DHT20.h"
+#include <ArduinoLowPower.h>
 
-#define win_size 4
-#define measure_period_s 5
+#define win_size 7
+#define measure_period_s 10
+#define range_percentage 100
+bool fpga_used;
 
-#define TEMP_MIN  24.612081304273765
-#define TEMP_MAX  37.95430094132428
+#define TEMP_MIN -5.0f
+#define TEMP_MAX 40.0f
+const float temp_spread = (TEMP_MAX - TEMP_MIN) * range_percentage / 100.0f;
+float prediction_temp;
 
 #define LIGHT_MIN 163.7478016239505
 #define LIGHT_MAX 1027.5785826547694
+const float light_spread = (LIGHT_MAX - LIGHT_MIN) * range_percentage / 100.0f;
+float prediction_light;
 
-float temp_win[win_size]={}; // to fill with zeros 
-float light_win[win_size]={}; // to fill with zeros 
-float hum_win[win_size]={}; // to fill with zeros 
-float press_win[win_size]={}; // to fill with zeros 
+#define HUM_MIN 40.0f
+#define HUM_MAX 100.0f
+const float hum_spread = (HUM_MAX - HUM_MIN) * range_percentage / 100.0f;
+float prediction_hum;
 
-// to FPGA write
-// 0 => wake up signal
+float temp_win[win_size] = {};
+float light_win[win_size] = {};
+float hum_win[win_size] = {};
+float press_win[win_size] = {};
 
-DHT20 Temperature_Sensor;
+DHT20 Temp_Hum_Sensor;
 
-void printwin (float temp_win[win_size]) {
+void printwin(float temp_win[win_size]) {
+  Serial.print("[ ");
   for (int i = 0; i < win_size; i++) {
     Serial.print(temp_win[i]);
     Serial.print(" ");
   }
+  Serial.print("]");
+}
+
+bool windowWithinRange(float window[], float spread)
+{
+  float win_min = window[0];
+  float win_max = window[0];
+
+  for (int i = 1; i < win_size; i++) {
+    if (window[i] < win_min)
+      win_min = window[i];
+    if (window[i] > win_max)
+      win_max = window[i];
+  }
+
+  return (win_max - win_min) <= spread;
+}
+
+float mean(float window[], int size)
+{
+    float sum = 0.0f;
+    for (int i = 0; i < size; i++)
+        sum += window[i];
+    return sum / size;
 }
 
 void setup() {
-  pinMode(A2,INPUT);
+  pinMode(A2, INPUT);
   Serial.begin(9600);
-  while(!Serial);
+  while (!Serial);
 
-  //   FPGA INITIALISATION 
-  
-  if (!FPGA.begin(16,4)) {
+  if (!FPGA.begin(16, 4)) {
     Serial.println("ERROR : Impossible configuration of FPGA.");
-   Serial.println(FPGA.getErrorMessage());
-    while (1); 
+    Serial.println(FPGA.getErrorMessage());
+    while (1);
   }
+
   Serial.println("FPGA configured sucessfull !");
+
   Wire.begin();
-  Temperature_Sensor.begin();
+  Temp_Hum_Sensor.begin();
 }
 
 void loop() {
 
   unsigned long start = millis();
-  //-----reading and sending temperature data----------------------------------------------------------------------------------------------
-  int status = Temperature_Sensor.read();
+
+  int status = Temp_Hum_Sensor.read();
+
+  //TEMPERATURE AND HUMIDITY SENSOR
   if (status == DHT20_OK) {
-    float temperature = Temperature_Sensor.getTemperature();
-    for (int i = 0; i<=win_size-1; i++) {
-      temp_win[i] = temp_win[i+1];
+
+    //TEMPERATURE
+    float temperature = Temp_Hum_Sensor.getTemperature();
+
+    for (int i = 0; i < win_size - 1; i++) {
+      temp_win[i] = temp_win[i + 1];
     }
-    temp_win[win_size-1] = temperature;
+    temp_win[win_size - 1] = temperature;
 
-    float Normalise_Temp =  (temperature-TEMP_MIN)/(TEMP_MAX-TEMP_MIN);
-    uint16_t sending_temperature = (uint16_t)(Normalise_Temp * 256);
+    //float Normalise_Temp = (temperature - TEMP_MIN) / (TEMP_MAX - TEMP_MIN);
 
-    // Sending the data (sensor_in) to Register 0 (register 0 of the JTAG interface)
-    FPGA.write(0, sending_temperature); 
-    // Pulse DataReady (Register 2) to validate the entry
-    FPGA.write(2, 1); 
-    delayMicroseconds(1); // Allow time for the FPGA clk  to see the front
-    FPGA.write(2, 0);
-    delayMicroseconds(1);
+    //uint16_t sending_temperature = (uint16_t)(Normalise_Temp * 256);
+
+    // FPGA.write(0, sending_temperature);
+    // FPGA.write(2, 1);
+    // delayMicroseconds(1);
+    // FPGA.write(2, 0);
+    // delayMicroseconds(1);
+    //HUMIDITY
+    float humidity = Temp_Hum_Sensor.getHumidity();
+
+    for (int i = 0; i < win_size - 1; i++) {
+      hum_win[i] = hum_win[i + 1];
+    }
+    hum_win[win_size - 1] = humidity;
+
+    //float Normalise_Hum = (humidity - HUM_MIN) / (HUM_MAX - HUM_MIN);
+
+    //uint16_t sending_humidity = (uint16_t)(Normalise_Hum * 256);
+
+    //FPGA.write(1, sending_humidity);
+    // FPGA.write(3, 1);
+    // delayMicroseconds(1);
+    // FPGA.write(3, 0);
+    // delayMicroseconds(1);
   }
-    
-  // ****************************3. reading and Sending  Light data ***************************************************************************************************************
-    // Conversion to Q8.8 (as in Python: value * 256)
-    ///
-      //Serial.println(".................HERE..................");
-  float light =analogRead(A2);
-  for (int i = 0; i<win_size-1; i++) {
-    light_win[i] = light_win[i+1];
+
+  //LIGHT SENSOR
+  // float light = analogRead(A2);
+
+  // for (int i = 0; i < win_size - 1; i++) {
+  //   light_win[i] = light_win[i + 1];
+  // }
+
+  // light_win[win_size - 1] = light;
+
+  // float Normalise_light =
+  //   (light - LIGHT_MIN) / (LIGHT_MAX - LIGHT_MIN);
+
+  // uint16_t sending_light =
+  //   (uint16_t)(Normalise_light * 256);
+
+  // FPGA.write(1, sending_light);
+
+  // FPGA.write(3, 1);
+  // delayMicroseconds(1);
+  // FPGA.write(3, 0);
+  // delayMicroseconds(1);
+
+  //deciding whether to use the neural network or not
+  //if all the measurements in the window fall within a certain relative range, then the fpga is not used and the prediction is evaluated in the microprocessor
+  if (windowWithinRange(temp_win, temp_spread) && windowWithinRange(hum_win, hum_spread)) {
+    fpga_used = false;
+    prediction_temp = mean(temp_win, win_size);
+    prediction_hum  = mean(hum_win,  win_size);
+  } else {//need to evaluate the prediction with the neural network
+    fpga_used = true;
+
+  // uint16_t prediction_temp = FPGA.read(1);
+  // uint16_t prediction_Light = FPGA.read(2);
+
+  // float prediction__temp_float = prediction_temp / 256.0;
+  // float reel_predtiction_temp = prediction__temp_float * (TEMP_MAX - TEMP_MIN) + TEMP_MIN;
+
+  // float prediction_light_float = prediction_Light / 256.0;
+  // float reel_predtiction_light = prediction_light_float * (LIGHT_MAX - LIGHT_MIN) + LIGHT_MIN;
+
+  delay(10);// waiting for the fpga to finish
   }
-  light_win[win_size-1] = light;
-  float Normalise_light=  (light-LIGHT_MIN)/(LIGHT_MAX-LIGHT_MIN);
-  uint16_t sending_light = (uint16_t)(Normalise_light * 256);
 
-  // Sending the data (sensor_in) to Register 0 (register 0 of the JTAG interface)
-  FPGA.write(1, sending_light); 
-  // Pulse DataReady (Register 3) to validate the entry
-  FPGA.write(3, 1); 
-  delayMicroseconds(1); // Allow time for the FPGA clk  to see the front
-  FPGA.write(3, 0);
-  delayMicroseconds(1);
 
-  //while(FPGA.read(0))//waiting for the result
-  delay(10);
-  ///. READING prediction data
-  uint16_t prediction_temp = FPGA.read(1);//------------------TEMPERATURE
-  uint16_t prediction_Light = FPGA.read(2);//------------------LIGHT
-  
-  // Reverse conversion: from Q8.8 to Float
-  float prediction__temp_float=prediction_temp/ 256.0;
-  float reel_predtiction_temp = prediction__temp_float*(TEMP_MAX-TEMP_MIN) + TEMP_MIN;
-  // Reverse conversion: from Q8.8 to Float
-  float prediction_light_float=prediction_Light/ 256.0;
-  float reel_predtiction_light = prediction_light_float*(LIGHT_MAX-LIGHT_MIN) + LIGHT_MIN;
-  
   unsigned long exe_time = millis() - start;
 
-  Serial.println("## ITERATION COMPLETE ##");
+  Serial.println("\n\n## ITERATION COMPLETE ##");
 
   Serial.print("Temp window: ");
   printwin(temp_win);
   Serial.print(" => prediction: ");
-  Serial.println(reel_predtiction_temp);
+  Serial.println(prediction_temp);
 
-  Serial.print("Light window: ");
+  Serial.print("Hum window:  ");
   printwin(light_win);
   Serial.print(" => prediction: ");
-  Serial.println(reel_predtiction_light);
-  
-  Serial.print("Prediction was ready in: ");
-  Serial.print(exe_time/1000);
-  Serial.println(" s");
+  Serial.println(prediction_hum);
 
+  Serial.print("FPGA used: ");
+  Serial.println(fpga_used);
+
+  Serial.print("Prediction was ready in: ");
+  Serial.print(exe_time / 1000.0);
+  Serial.println(" s");
 
   unsigned long period_ms = measure_period_s * 1000UL;
 
   if (exe_time < period_ms) {
+
     unsigned long wait_time = period_ms - exe_time;
 
-    Serial.print("Waiting for ");
-    Serial.print(wait_time/float(1000));
+    Serial.print("Sleeping for ");
+    Serial.print(wait_time / 1000.0);
     Serial.println(" s");
 
-    delay(wait_time);
-  } else {
+    LowPower.sleep(wait_time / 1000);
+    delay(wait_time % 1000);
+  }
+  else {
     Serial.println("No waiting: execution time exceeded measurement period.");
   }
 }
