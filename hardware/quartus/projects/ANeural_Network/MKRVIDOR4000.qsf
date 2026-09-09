@@ -77,7 +77,7 @@ set_global_assignment -name GENERATE_JBC_FILE ON
 set_global_assignment -name STRATIXIII_UPDATE_MODE STANDARD
 set_global_assignment -name CYCLONEIII_CONFIGURATION_DEVICE EPCS16
 
-source ../../MKRVIDOR4000/vidor_s_pins.qsf
+source ../../constraints/MKRVIDOR4000/vidor_s_pins.qsf
 
 set_global_assignment -name TOP_LEVEL_ENTITY MKRVIDOR4000_top
 
@@ -88,13 +88,18 @@ set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE PERFORMANCE"
 set_global_assignment -name ENABLE_SIGNALTAP OFF
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
 set_global_assignment -name VERILOG_FILE q_multiplier.v
-set_global_assignment -name VERILOG_FILE SYSTEM_PLL.v
-set_global_assignment -name VERILOG_FILE SYSTEM_PLL_altpll.v
+set_global_assignment -name QSYS_FILE JTAG.qsys
+set_global_assignment -name QIP_FILE ../../../../software/python/Temperature_and_Light_Q4.4_ANN/template/ip/SYSTEM_PLL/SYSTEM_PLL.qip
 set_global_assignment -name BDF_FILE jtag_synchronizer.bdf
 set_global_assignment -name VERILOG_FILE MKRVIDOR4000_top.v
 set_global_assignment -name VERILOG_FILE jtag_synchronizer_basic.v
 set_global_assignment -name VERILOG_FILE jtag_memory.v
+set_global_assignment -name VERILOG_FILE jtag_interface8.v
+set_global_assignment -name VERILOG_FILE jtag_interface4.v
+set_global_assignment -name VERILOG_FILE jtag_interface2.v
+set_global_assignment -name VERILOG_FILE jtag_interface16.v
 set_global_assignment -name VERILOG_FILE jtag_interface.v
+set_global_assignment -name VERILOG_FILE jtag_interface_debug.v
 set_global_assignment -name VERILOG_FILE q_multiplier_tb.v
 set_global_assignment -name EDA_SIMULATION_TOOL "QuestaSim (Verilog)"
 set_global_assignment -name EDA_TIME_SCALE "1 ns" -section_id eda_simulation

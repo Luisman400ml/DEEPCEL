@@ -1,7 +1,7 @@
-﻿{
+{
     "verified_at":  "2026-09-08T11:30:50.5987723+02:00",
     "port":  "COM4",
-    "loaded_sketch":  "Temperature_real_lowpower_hwtest",
+    "loaded_sketch":  "software/arduino/Temperature_real_lowpower_hwtest",
     "quartus":  "25.1std.0",
     "vectors_per_run":  128,
     "reads_per_run":  256,
@@ -26,99 +26,99 @@
                           "sha256":  "BC6E6AF7E412341F3D2E5BC0216EBB10FA62E70F0C7457AB73E37588B29D5BC2"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/MKRVIDOR4000.qsf",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/MKRVIDOR4000.qsf",
                           "sha256":  "91A7E74876095D03067C1912EA2F8D28ECF10D504A35331B4642F882AF70AA32"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/MKRVIDOR4000.sdc",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/MKRVIDOR4000.sdc",
                           "sha256":  "E1841EFD901E96189EC7FD225DDBBA7D70502389FE1AE8F90E3104DB33A024AB"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/MKRVIDOR4000_top.v",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/MKRVIDOR4000_top.v",
                           "sha256":  "D54C69E36DD3940D115DE7D117AAD1F55246CE5DBF684B784EC68FEDE41AA095"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/eco_nn_top.v",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/eco_nn_top.v",
                           "sha256":  "5DBE8D1E0D9042814C2545A3D90E41CA9E98E28CB8A5D31E40CF83903A485EC4"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/neuron.v",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/neuron.v",
                           "sha256":  "AEF32D7A78053346061E4B836E7C5F82F5188E15DE38484F0B38CECE446C37E1"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.ttf",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.ttf",
                           "sha256":  "351E72B5B5136F492ACF563B20920FB1FA02DE8E24831A3686152DF4F97424AF"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.summary",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.summary",
                           "sha256":  "4E18B343B908692A209E6F0CE21D2E4EA2F6D2AEC07CBA9B37B0CB490D166596"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.sta.summary",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.sta.summary",
                           "sha256":  "4487CD0C64BEE761628B124C25A8138C4104A970EE6A5B4DE49967EF3BF23F37"
                       },
                       {
-                          "path":  "Temperature_real_base_hwtest/Temperature_real_base_hwtest.ino",
+                          "path":  "software/arduino/Temperature_real_base_hwtest/Temperature_real_base_hwtest.ino",
                           "sha256":  "1E2D80F65AAA7C343875A9CD5D6EEB1904EA92419BA7DAFACEB02CC85987CEB1"
                       },
                       {
-                          "path":  "Temperature_real_base_hwtest/FPGA_Bitstream.h",
+                          "path":  "software/arduino/Temperature_real_base_hwtest/FPGA_Bitstream.h",
                           "sha256":  "126BF0E7D61884C0D20E655FC9DF3FD4157A069A827E150E292570866CF1D818"
                       },
                       {
-                          "path":  "Temperature_real_base_hwtest/fpga_selftest.h",
+                          "path":  "software/arduino/Temperature_real_base_hwtest/fpga_selftest.h",
                           "sha256":  "E29CE116D1E0CDD37D553F5C44BF448A7A33817508F0C753BC54507BD2FB3B75"
                       },
                       {
-                          "path":  "comparativa_real_hw/base_25_original_constraints_serial.log",
+                          "path":  "docs/evidence/hardware_validation/base_25_original_constraints_serial.log",
                           "sha256":  "4FD638D56FE084D3CF1B12C22A0C1D35116CF8CDCE547FA7FCFA95D51CD63D80"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/MKRVIDOR4000.qsf",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/MKRVIDOR4000.qsf",
                           "sha256":  "91A7E74876095D03067C1912EA2F8D28ECF10D504A35331B4642F882AF70AA32"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/MKRVIDOR4000.sdc",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/MKRVIDOR4000.sdc",
                           "sha256":  "E1841EFD901E96189EC7FD225DDBBA7D70502389FE1AE8F90E3104DB33A024AB"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/MKRVIDOR4000_top.v",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/MKRVIDOR4000_top.v",
                           "sha256":  "70E68F3927DD5F2369E5EBBC25D8E7758DB775D1026529C0E85F8FC064A70284"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/eco_nn_top.v",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/eco_nn_top.v",
                           "sha256":  "54D939073594C3AA83066307F4D02F1B99E76B7A0990456F3B9D1162BC3A8F1F"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/neuron.v",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/neuron.v",
                           "sha256":  "222E7D62E0FD207F88579E3EC1368C512F7B1D0CF82E42CEB473C30EC35AE69C"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.ttf",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.ttf",
                           "sha256":  "0D09807E2A82E152DE57E3491987FF8A2F57C644E21CF67CAB9BCADD861B8B6F"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.summary",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.summary",
                           "sha256":  "A8F02C86785B2D152E23A0BB4D3DC86EA0B4616635DF414BBBF0D9D9C6113D7B"
                       },
                       {
-                          "path":  "QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.sta.summary",
+                          "path":  "hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.sta.summary",
                           "sha256":  "A1334DFFE9C411549DDBA62D1CCFB1C59169584E36AE8AB6B4511034CF383BDF"
                       },
                       {
-                          "path":  "Temperature_real_lowpower_hwtest/Temperature_real_lowpower_hwtest.ino",
+                          "path":  "software/arduino/Temperature_real_lowpower_hwtest/Temperature_real_lowpower_hwtest.ino",
                           "sha256":  "EB6B7FEBACDA1794E75DB09C8525A36F3D0D85EBADB4BB53E8FF2D6620FF2CC3"
                       },
                       {
-                          "path":  "Temperature_real_lowpower_hwtest/FPGA_Bitstream.h",
+                          "path":  "software/arduino/Temperature_real_lowpower_hwtest/FPGA_Bitstream.h",
                           "sha256":  "4499E577A095DC6E96886B8D30282D9BA3D83EBCF49DD7A917D21AE24F5EC258"
                       },
                       {
-                          "path":  "Temperature_real_lowpower_hwtest/fpga_selftest.h",
+                          "path":  "software/arduino/Temperature_real_lowpower_hwtest/fpga_selftest.h",
                           "sha256":  "E29CE116D1E0CDD37D553F5C44BF448A7A33817508F0C753BC54507BD2FB3B75"
                       },
                       {
-                          "path":  "comparativa_real_hw/lowpower_25_original_constraints_serial.log",
+                          "path":  "docs/evidence/hardware_validation/lowpower_25_original_constraints_serial.log",
                           "sha256":  "C93EEA691BAE6E77875B726AC9A061D51016733B88FAC119757BFB2F1DC4A751"
                       }
                   ]

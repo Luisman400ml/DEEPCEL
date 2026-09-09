@@ -77,7 +77,7 @@ set_global_assignment -name GENERATE_JBC_FILE ON
 set_global_assignment -name STRATIXIII_UPDATE_MODE STANDARD
 set_global_assignment -name CYCLONEIII_CONFIGURATION_DEVICE EPCS16
 
-source ../../MKRVIDOR4000/vidor_s_pins.qsf
+source ../../constraints/MKRVIDOR4000/vidor_s_pins.qsf
 
 set_global_assignment -name TOP_LEVEL_ENTITY MKRVIDOR4000_top
 
@@ -188,5 +188,3 @@ set_instance_assignment -name IO_STANDARD "2.5 V" -to panel_en
 set_instance_assignment -name IO_STANDARD "2.5 V" -to oSAM_INT
 set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to iSAM_INT
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-
-set_global_assignment -name POWER_DEFAULT_TOGGLE_RATE 12.5%

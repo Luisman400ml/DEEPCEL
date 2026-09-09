@@ -38,17 +38,17 @@ Tamanos aproximados:
 
 | Archivo | Tamano textual |
 | --- | ---: |
-| `Temperature_real/FPGA_Bitstream.h` | 473726 bytes |
-| `Temperature_real_and_Thingsboard/FPGA_Bitstream.h` | 714569 bytes |
-| `Temperature_real/Temperature_real.ino` | 3169 bytes |
-| `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino` | 1184 bytes |
+| `software/arduino/Temperature_real/FPGA_Bitstream.h` | 473726 bytes |
+| `software/arduino/Temperature_real_and_Thingsboard/FPGA_Bitstream.h` | 714569 bytes |
+| `software/arduino/Temperature_real/Temperature_real.ino` | 3169 bytes |
+| `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino` | 1184 bytes |
 
 Los bitstreams contienen aproximadamente:
 
 | Bitstream | Valores numericos |
 | --- | ---: |
-| `Temperature_real/FPGA_Bitstream.h` | 175721 |
-| `Temperature_real_and_Thingsboard/FPGA_Bitstream.h` | 175894 |
+| `software/arduino/Temperature_real/FPGA_Bitstream.h` | 175721 |
+| `software/arduino/Temperature_real_and_Thingsboard/FPGA_Bitstream.h` | 175894 |
 
 ## Dependencias instaladas
 
@@ -90,8 +90,8 @@ Librerias usadas al compilar:
 Comandos usados para compilar sin cargar en placa:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\Temperature_real
-& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\Temperature_real_and_Thingsboard
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\software\arduino\Temperature_real
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\software\arduino\Temperature_real_and_Thingsboard
 ```
 
 Resultado:
@@ -158,16 +158,16 @@ La revision se ha realizado sobre los dos sketches `.ino` y los modulos comunes 
 
 | Prioridad | Hallazgo | Referencias | Impacto |
 | --- | --- | --- | --- |
-| Alta | La variante `Temperature_real_and_Thingsboard` imprime una prediccion aunque falle la lectura del DHT20, porque `FPGA.read()` y `Serial.println()` estan fuera del bloque `if (status == DHT20_OK)`. | `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:29`, `:43`, `:46`, `:50` | La Raspberry Pi podria recibir valores antiguos o no validos sin distinguirlos de una lectura correcta. |
-| Media | `while(!Serial);` bloquea el arranque hasta que exista conexion USB/Serial. | `Temperature_real/Temperature_real.ino:11`, `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:12` | En uso autonomo, el sistema puede quedarse parado si no hay host Serial abierto. |
-| Media | `sensor1.begin()` devuelve `bool`, pero el resultado no se comprueba. | `Temperature_real/Temperature_real.ino:22`, `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:22` | Si el DHT20 no esta conectado o falla el bus I2C, el programa no informa claramente del problema. |
-| Media | La conversion Q8.8 usa `uint16_t` para entrada y prediccion. | `Temperature_real/Temperature_real.ino:41`, `Temperature_real/Temperature_real.ino:65`, `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:32`, `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:46` | No representa temperaturas negativas. Si la FPGA usa Q8.8 con signo, se debe usar `int16_t` y convertir con signo. |
-| Media | El registro 0 se usa como entrada de temperatura y salida de prediccion. | `Temperature_real/Temperature_real.ino:44`, `Temperature_real/Temperature_real.ino:65`, `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:35`, `Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:46` | Es valido si el diseno FPGA lo define asi, pero debe documentarse como contrato de protocolo para evitar errores al cambiar el bitstream. |
-| Media | `Temperature_real` mantiene una ventana local de 4 temperaturas, pero solo envia la muestra actual a la FPGA. | `Temperature_real/Temperature_real.ino:33`, `Temperature_real/Temperature_real.ino:37`, `Temperature_real/Temperature_real.ino:41`, `Temperature_real/Temperature_real.ino:44` | Si el modelo FPGA necesita las 4 muestras y no guarda historial internamente, la prediccion no usara la ventana mostrada por Serial. |
-| Baja | La salida Serial y algunos comentarios tienen texto con codificacion corrupta, por ejemplo `Â°C`. | `Temperature_real/Temperature_real.ino:32`, `Temperature_real/Temperature_real.ino:73`, `FPGA.h:39` | Es principalmente cosmetico, pero puede molestar si se registran logs o se parsea texto. |
-| Baja | `upload.cpp` guarda el resultado de `jtagInit()` pero no lo valida, y tampoco valida el resultado de `mbEveSend()`. | `Temperature_real/upload.cpp:85`, `Temperature_real/upload.cpp:90` | Si falla la configuracion FPGA, el error final sera menos diagnostico. |
-| Baja | En `jtag.c`, `jtagReadBuffer()` devuelve `len` despues de decrementar el contador hasta cero. | `Temperature_real/jtag.c:623`, `Temperature_real/jtag.c:645`, `Temperature_real/jtag.c:651` | Como API general deberia devolver el numero de palabras leidas o un codigo de error. En el flujo actual apenas se usa ese retorno. |
-| Baja | `mbPinSet()` esta declarado como `int`, pero no retorna valor. | `Temperature_real/jtag.c:660`, `Temperature_real/jtag.c:669` | No rompe el sketch actual porque no se usa el retorno, pero conviene corregirlo por limpieza y portabilidad. |
+| Alta | La variante `Temperature_real_and_Thingsboard` imprime una prediccion aunque falle la lectura del DHT20, porque `FPGA.read()` y `Serial.println()` estan fuera del bloque `if (status == DHT20_OK)`. | `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:29`, `:43`, `:46`, `:50` | La Raspberry Pi podria recibir valores antiguos o no validos sin distinguirlos de una lectura correcta. |
+| Media | `while(!Serial);` bloquea el arranque hasta que exista conexion USB/Serial. | `software/arduino/Temperature_real/Temperature_real.ino:11`, `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:12` | En uso autonomo, el sistema puede quedarse parado si no hay host Serial abierto. |
+| Media | `sensor1.begin()` devuelve `bool`, pero el resultado no se comprueba. | `software/arduino/Temperature_real/Temperature_real.ino:22`, `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:22` | Si el DHT20 no esta conectado o falla el bus I2C, el programa no informa claramente del problema. |
+| Media | La conversion Q8.8 usa `uint16_t` para entrada y prediccion. | `software/arduino/Temperature_real/Temperature_real.ino:41`, `software/arduino/Temperature_real/Temperature_real.ino:65`, `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:32`, `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:46` | No representa temperaturas negativas. Si la FPGA usa Q8.8 con signo, se debe usar `int16_t` y convertir con signo. |
+| Media | El registro 0 se usa como entrada de temperatura y salida de prediccion. | `software/arduino/Temperature_real/Temperature_real.ino:44`, `software/arduino/Temperature_real/Temperature_real.ino:65`, `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:35`, `software/arduino/Temperature_real_and_Thingsboard/Temperature_real_and_Thingsboard.ino:46` | Es valido si el diseno FPGA lo define asi, pero debe documentarse como contrato de protocolo para evitar errores al cambiar el bitstream. |
+| Media | `Temperature_real` mantiene una ventana local de 4 temperaturas, pero solo envia la muestra actual a la FPGA. | `software/arduino/Temperature_real/Temperature_real.ino:33`, `software/arduino/Temperature_real/Temperature_real.ino:37`, `software/arduino/Temperature_real/Temperature_real.ino:41`, `software/arduino/Temperature_real/Temperature_real.ino:44` | Si el modelo FPGA necesita las 4 muestras y no guarda historial internamente, la prediccion no usara la ventana mostrada por Serial. |
+| Baja | La salida Serial y algunos comentarios tienen texto con codificacion corrupta, por ejemplo `Â°C`. | `software/arduino/Temperature_real/Temperature_real.ino:32`, `software/arduino/Temperature_real/Temperature_real.ino:73`, `FPGA.h:39` | Es principalmente cosmetico, pero puede molestar si se registran logs o se parsea texto. |
+| Baja | `upload.cpp` guarda el resultado de `jtagInit()` pero no lo valida, y tampoco valida el resultado de `mbEveSend()`. | `software/arduino/Temperature_real/upload.cpp:85`, `software/arduino/Temperature_real/upload.cpp:90` | Si falla la configuracion FPGA, el error final sera menos diagnostico. |
+| Baja | En `jtag.c`, `jtagReadBuffer()` devuelve `len` despues de decrementar el contador hasta cero. | `software/arduino/Temperature_real/jtag.c:623`, `software/arduino/Temperature_real/jtag.c:645`, `software/arduino/Temperature_real/jtag.c:651` | Como API general deberia devolver el numero de palabras leidas o un codigo de error. En el flujo actual apenas se usa ese retorno. |
+| Baja | `mbPinSet()` esta declarado como `int`, pero no retorna valor. | `software/arduino/Temperature_real/jtag.c:660`, `software/arduino/Temperature_real/jtag.c:669` | No rompe el sketch actual porque no se usa el retorno, pero conviene corregirlo por limpieza y portabilidad. |
 
 ### Revision del flujo Raspberry Pi / ThingsBoard
 
@@ -236,7 +236,7 @@ Fecha de revision: 2026-09-07
 Se ha detectado una nueva carpeta en la raiz:
 
 ```text
-C:\Users\PC\OneDrive\Escritorio\DEEPCEL\Verilog
+C:\Users\PC\OneDrive\Escritorio\DEEPCEL\hardware\verilog_reference\common_rtl
 ```
 
 Esta carpeta contiene fuentes HDL para la FPGA de la MKR Vidor 4000. No se ha cargado nada en placa durante esta revision.
@@ -271,8 +271,8 @@ jtag_interface #(
 Por tanto, esta carpeta encaja con los proyectos:
 
 ```text
-Arduino\Data_prediction
-Arduino\Data_prediction_and_Thingsboard
+software\arduino\Data_prediction
+software\arduino\Data_prediction_and_Thingsboard
 ```
 
 Estos sketches usan:
@@ -300,15 +300,15 @@ Conclusion: la carpeta `Verilog` corresponde al diseno de temperatura + luz, no 
 
 | Prioridad | Hallazgo | Referencias | Impacto |
 | --- | --- | --- | --- |
-| Alta | Falta el modulo `jtag_synchronizer`. `jtag_interface.v` lo instancia, pero el archivo disponible declara `synchronizer_basic`, no `jtag_synchronizer`. | `Verilog/jtag_interface.v:45`, `Verilog/jtag_synchronizer_basic.v:2` | El proyecto no deberia sintetizar tal como esta salvo que exista otro archivo no incluido. |
-| Alta | No estan los archivos completos de proyecto Quartus: no se ven `.qpf`, `.qsf`, `.sdc` ni el IP generado de `SYSTEM_PLL`. | `Verilog/MKRVIDOR4000_top.v:153` | Con solo esta carpeta probablemente no se puede regenerar `FPGA_Bitstream.h`. |
-| Alta | El top deja muchas senales fisicas declaradas pero sin asignacion visible: SDRAM, HDMI, flash, MKR, Mini PCIe, NINA, etc. | `Verilog/MKRVIDOR4000_top.v:27`, `:30`, `:42`, `:47`, `:74`, `:97`, `:113` | Puede producir warnings de sintesis y comportamiento indefinido si no hay constraints o asignaciones externas que lo controlen. |
-| Media | `wFLASH_CLK` se usa en la PLL pero no esta declarado. | `Verilog/MKRVIDOR4000_top.v:160` | Verilog puede crear una red implicita, pero es fragil. Con `default_nettype none` seria error. |
-| Media | `eco_nn_top_Tb .v` tiene un espacio en el nombre antes de `.v`. | `Verilog/eco_nn_top_Tb .v` | Puede causar problemas en scripts, rutas o herramientas de simulacion. |
-| Media | El testbench no aplica reset activo bajo. Inicializa `reset = 1`, pero el diseno resetea con `if (!reset)`. | `Verilog/eco_nn_top_Tb .v:36`, `Verilog/eco_nn_top.v:15` | En simulacion, la ventana interna puede arrancar en `X` hasta recibir suficientes muestras. |
-| Media | El mismo modulo `neuron.v` usa ReLU tambien en la capa de salida. | `Verilog/eco_nn_top.v:144`, `Verilog/neuron.v:24` | Para regresion de temperatura/luz, una salida lineal suele ser mas apropiada. ReLU fuerza predicciones negativas a cero. |
-| Media | La suma de la neurona trunca `sum[15:0]` sin saturacion. | `Verilog/neuron.v:24` | Si hay overflow, la salida puede envolver en lugar de saturar. |
-| Baja | Hay archivos que parecen auxiliares o no usados por el top actual, como `q_multiplier.v`, `q_multiplier_tb.v`, `jtag_interface3/7/15/31.v` y `MKRVIDOR4000.vhd`. | `Verilog/q_multiplier.v:1`, `Verilog/MKRVIDOR4000.vhd:6` | Conviene documentar si son pruebas, ejemplos o versiones antiguas para evitar confusion. |
+| Alta | Falta el modulo `jtag_synchronizer`. `jtag_interface.v` lo instancia, pero el archivo disponible declara `synchronizer_basic`, no `jtag_synchronizer`. | `hardware/verilog_reference/common_rtl/jtag_interface.v:45`, `hardware/verilog_reference/common_rtl/jtag_synchronizer_basic.v:2` | El proyecto no deberia sintetizar tal como esta salvo que exista otro archivo no incluido. |
+| Alta | No estan los archivos completos de proyecto Quartus: no se ven `.qpf`, `.qsf`, `.sdc` ni el IP generado de `SYSTEM_PLL`. | `hardware/verilog_reference/common_rtl/MKRVIDOR4000_top.v:153` | Con solo esta carpeta probablemente no se puede regenerar `FPGA_Bitstream.h`. |
+| Alta | El top deja muchas senales fisicas declaradas pero sin asignacion visible: SDRAM, HDMI, flash, MKR, Mini PCIe, NINA, etc. | `hardware/verilog_reference/common_rtl/MKRVIDOR4000_top.v:27`, `:30`, `:42`, `:47`, `:74`, `:97`, `:113` | Puede producir warnings de sintesis y comportamiento indefinido si no hay constraints o asignaciones externas que lo controlen. |
+| Media | `wFLASH_CLK` se usa en la PLL pero no esta declarado. | `hardware/verilog_reference/common_rtl/MKRVIDOR4000_top.v:160` | Verilog puede crear una red implicita, pero es fragil. Con `default_nettype none` seria error. |
+| Media | `eco_nn_top_Tb .v` tiene un espacio en el nombre antes de `.v`. | `hardware/verilog_reference/common_rtl/eco_nn_top_Tb .v` | Puede causar problemas en scripts, rutas o herramientas de simulacion. |
+| Media | El testbench no aplica reset activo bajo. Inicializa `reset = 1`, pero el diseno resetea con `if (!reset)`. | `hardware/verilog_reference/common_rtl/eco_nn_top_Tb .v:36`, `hardware/verilog_reference/common_rtl/eco_nn_top.v:15` | En simulacion, la ventana interna puede arrancar en `X` hasta recibir suficientes muestras. |
+| Media | El mismo modulo `neuron.v` usa ReLU tambien en la capa de salida. | `hardware/verilog_reference/common_rtl/eco_nn_top.v:144`, `hardware/verilog_reference/common_rtl/neuron.v:24` | Para regresion de temperatura/luz, una salida lineal suele ser mas apropiada. ReLU fuerza predicciones negativas a cero. |
+| Media | La suma de la neurona trunca `sum[15:0]` sin saturacion. | `hardware/verilog_reference/common_rtl/neuron.v:24` | Si hay overflow, la salida puede envolver en lugar de saturar. |
+| Baja | Hay archivos que parecen auxiliares o no usados por el top actual, como `q_multiplier.v`, `q_multiplier_tb.v`, `jtag_interface3/7/15/31.v` y `MKRVIDOR4000.vhd`. | `hardware/verilog_reference/common_rtl/q_multiplier.v:1`, `hardware/verilog_reference/common_rtl/MKRVIDOR4000.vhd:6` | Conviene documentar si son pruebas, ejemplos o versiones antiguas para evitar confusion. |
 
 ### Mapeo JTAG esperado por este diseno
 
@@ -321,7 +321,7 @@ En `MKRVIDOR4000_top.v`, la interfaz JTAG mapea 4 registros de 16 bits:
 | Registro 2 | `FPGA.write(2, ...)` | Pulso `temp_data_ready`. |
 | Registro 3 | `FPGA.write(3, ...)` | Pulso `Light_data_ready`. |
 
-Este mapeo coincide con `Arduino\Data_prediction.ino` y `Arduino\Data_prediction_and_Thingsboard.ino`.
+Este mapeo coincide con `software\arduino\Data_prediction.ino` y `software\arduino\Data_prediction_and_Thingsboard.ino`.
 
 ### Estado de validacion
 
@@ -353,13 +353,13 @@ Listar placa MKR Vidor 4000:
 Compilar `Temperature_real` sin cargar:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\Temperature_real
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\software\arduino\Temperature_real
 ```
 
 Compilar `Temperature_real_and_Thingsboard` sin cargar:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\Temperature_real_and_Thingsboard
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\software\arduino\Temperature_real_and_Thingsboard
 ```
 
 Comando que no se ha usado porque cargaria el programa en la placa:

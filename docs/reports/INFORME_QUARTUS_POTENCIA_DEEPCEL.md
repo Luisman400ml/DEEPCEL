@@ -6,7 +6,7 @@ Fecha del analisis: 2026-09-08
 
 Este informe resume los resultados obtenidos con Quartus Prime Lite sobre la copia de trabajo:
 
-`QuartusProject/ANeural_Network_power25`
+`hardware/quartus/projects/ANeural_Network_power25`
 
 El proyecto original `ANeural_Network` se conserva. La fase inicial uso una copia para recompilar con Quartus 25.1 y ejecutar Power Analyzer. Las fases posteriores incluyeron cargas normales por USB y pruebas funcionales en placa, descritas en las secciones 18 y 19.
 
@@ -14,14 +14,14 @@ El proyecto original `ANeural_Network` se conserva. La fase inicial uso una copi
 
 | Elemento | Ruta |
 |---|---|
-| Proyecto analizado | `QuartusProject/ANeural_Network_power25` |
-| Resumen de potencia | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.summary` |
-| Reporte completo de potencia | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.rpt` |
-| Resumen de recursos | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.fit.summary` |
-| Reporte completo de recursos | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.fit.rpt` |
-| Resumen de timing | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.sta.summary` |
-| Reporte completo de timing | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.sta.rpt` |
-| Capturas generadas | `capturas_quartus/` |
+| Proyecto analizado | `hardware/quartus/projects/ANeural_Network_power25` |
+| Resumen de potencia | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.summary` |
+| Reporte completo de potencia | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.rpt` |
+| Resumen de recursos | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.fit.summary` |
+| Reporte completo de recursos | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.fit.rpt` |
+| Resumen de timing | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.sta.summary` |
+| Reporte completo de timing | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.sta.rpt` |
+| Capturas generadas | `../captures/quartus/` |
 
 ## 2. Configuracion del analisis
 
@@ -63,7 +63,7 @@ Esto define `iCLK` como reloj de 48 MHz y deja que Quartus derive los relojes in
 
 ## 4. Captura del resumen de Power Analyzer
 
-![Resumen Power Analyzer](capturas_quartus/01_power_analyzer_summary.png)
+![Resumen Power Analyzer](../captures/quartus/01_power_analyzer_summary.png)
 
 ## 5. Recursos FPGA usados
 
@@ -81,7 +81,7 @@ Esto define `iCLK` como reloj de 48 MHz y deja que Quartus derive los relojes in
 
 Captura de la tabla de Quartus:
 
-![Fitter Resource Usage](capturas_quartus/05_fitter_resource_usage.png)
+![Fitter Resource Usage](../captures/quartus/05_fitter_resource_usage.png)
 
 Interpretacion: el diseno ocupa poca logica respecto a la FPGA disponible, pero usa muchos pines. No usa memoria M9K ni multiplicadores embebidos de 9 bits, por lo que los multiplicadores del modelo parecen implementarse con logica general.
 
@@ -109,7 +109,7 @@ La potencia de I/O es mayor que la dinamica de core. Esto encaja con un diseno q
 
 Captura de la tabla de Quartus:
 
-![Power by Block Type](capturas_quartus/02_power_by_block_type.png)
+![Power by Block Type](../captures/quartus/02_power_by_block_type.png)
 
 ## 8. Potencia por jerarquia
 
@@ -125,7 +125,7 @@ Quartus indica que el valor entre parentesis es la potencia consumida en ese niv
 
 Captura resumida con los nodos relevantes:
 
-![Power by Hierarchy](capturas_quartus/03_power_by_hierarchy_relevante.png)
+![Power by Hierarchy](../captures/quartus/03_power_by_hierarchy_relevante.png)
 
 Lectura practica: si se habla del bloque del modelo neuronal como jerarquia `eco_nn_top:uut`, la estimacion mas util es aproximadamente 22.90 mW dinamicos incluyendo subniveles. La estatica global no se reparte entre subjerarquias, por eso no debe sumarse directamente como si fuese una potencia completa independiente del modelo.
 
@@ -170,7 +170,7 @@ El dominio de 120 MHz concentra la mayor parte de la potencia dinamica de core.
 
 Captura conjunta de dominios de reloj, rails y bancos VCCIO:
 
-![Clock and Current Tables](capturas_quartus/04_clock_current_vccio.png)
+![Clock and Current Tables](../captures/quartus/04_clock_current_vccio.png)
 
 ## 12. Condiciones termicas
 
@@ -202,7 +202,7 @@ Captura conjunta de dominios de reloj, rails y bancos VCCIO:
 
 Captura de Quartus:
 
-![Timing Multicorner](capturas_quartus/06_timing_multicorner.png)
+![Timing Multicorner](../captures/quartus/06_timing_multicorner.png)
 
 El diseno no cumple setup en el dominio derivado de PLL a 120 MHz. Esto no invalida que Power Analyzer pueda dar una estimacion de potencia, pero si es una senal de riesgo funcional si se pretende ejecutar la FPGA a esa frecuencia.
 
@@ -244,15 +244,15 @@ Resultado historico: esta version bajaba tambien el puente JTAG a 24 MHz y no su
 
 Se ha creado una copia separada del proyecto para probar los dos primeros cambios de mejora de consumo:
 
-`QuartusProject/ANeural_Network_power25_lowpower`
+`hardware/quartus/projects/ANeural_Network_power25_lowpower`
 
 Cambios aplicados:
 
 | Cambio | Archivo | Descripcion |
 |---|---|---|
-| Reloj mas bajo para modelo e interfaz JTAG | `QuartusProject/ANeural_Network_power25_lowpower/MKRVIDOR4000_top.v` | Se define `wNN_CLK = wCLK24` y se usa para `eco_nn_top` e `interfacejtag` en vez de `wCLK120` |
-| Enable por pulso de `data_ready` | `QuartusProject/ANeural_Network_power25_lowpower/eco_nn_top.v` | Se genera `sample_pulse` por flanco de subida y se habilitan las capas en pipeline |
-| Neuronas con enable | `QuartusProject/ANeural_Network_power25_lowpower/neuron.v` | Cada neurona solo recalcula cuando `enable` esta activo; en reposo mantiene la salida |
+| Reloj mas bajo para modelo e interfaz JTAG | `hardware/quartus/projects/ANeural_Network_power25_lowpower/MKRVIDOR4000_top.v` | Se define `wNN_CLK = wCLK24` y se usa para `eco_nn_top` e `interfacejtag` en vez de `wCLK120` |
+| Enable por pulso de `data_ready` | `hardware/quartus/projects/ANeural_Network_power25_lowpower/eco_nn_top.v` | Se genera `sample_pulse` por flanco de subida y se habilitan las capas en pipeline |
+| Neuronas con enable | `hardware/quartus/projects/ANeural_Network_power25_lowpower/neuron.v` | Cada neurona solo recalcula cuando `enable` esta activo; en reposo mantiene la salida |
 
 La interfaz de Arduino se mantiene igual: mismo numero de registros JTAG, misma entrada `sensor_in`, misma senal `data_ready` y misma salida `prediction`. El cambio relevante de comportamiento temporal es que la prediccion nueva queda disponible unos ciclos de `wNN_CLK` despues del pulso, lo cual no afecta al programa Arduino actual porque espera `delay(10)` antes de leer la prediccion.
 
@@ -260,11 +260,11 @@ La interfaz de Arduino se mantiene igual: mismo numero de registros JTAG, misma 
 
 | Elemento | Ruta |
 |---|---|
-| Proyecto optimizado | `QuartusProject/ANeural_Network_power25_lowpower` |
-| Resumen de potencia | `QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.summary` |
-| Reporte completo de potencia | `QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.rpt` |
-| Resumen de recursos | `QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.fit.summary` |
-| Resumen de timing | `QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.sta.summary` |
+| Proyecto optimizado | `hardware/quartus/projects/ANeural_Network_power25_lowpower` |
+| Resumen de potencia | `hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.summary` |
+| Reporte completo de potencia | `hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.rpt` |
+| Resumen de recursos | `hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.fit.summary` |
+| Resumen de timing | `hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.sta.summary` |
 
 ### 17.2 Comparacion de potencia
 
@@ -281,11 +281,11 @@ La interfaz de Arduino se mantiene igual: mismo numero de registros JTAG, misma 
 
 Captura comparativa:
 
-![Comparacion potencia lowpower](capturas_quartus/09_comparacion_potencia_lowpower.png)
+![Comparacion potencia lowpower](../captures/quartus/09_comparacion_potencia_lowpower.png)
 
 Captura del resumen Power Analyzer optimizado:
 
-![Resumen Power Analyzer lowpower](capturas_quartus/07_lowpower_power_analyzer_summary.png)
+![Resumen Power Analyzer lowpower](../captures/quartus/07_lowpower_power_analyzer_summary.png)
 
 ### 17.3 Comparacion de recursos
 
@@ -335,7 +335,7 @@ El ahorro principal viene de dejar de mover la red neuronal a 120 MHz. El PLL si
 
 Captura del timing optimizado:
 
-![Timing lowpower](capturas_quartus/08_lowpower_timing_multicorner.png)
+![Timing lowpower](../captures/quartus/08_lowpower_timing_multicorner.png)
 
 ### 17.7 Lectura de resultados
 
@@ -362,9 +362,9 @@ No se ha podido obtener una comparativa real de consumo en mW desde software por
 
 | Prueba | Bitstream usado | Carga en SAMD21 | Configuracion FPGA | Salida observada por serie |
 |---|---|---:|---:|---|
-| Sketch original `Temperature_real` | `Temperature_real/FPGA_Bitstream.h` existente | Correcta | Correcta | `FPGA successfully configured!`, `DHT20 sensor detected.`, temperatura real y prediccion FPGA |
-| Proyecto base recompilado | `QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.ttf` | Correcta | Falla | `ERROR: Unable to configure the FPGA.` |
-| Proyecto optimizado low-power | `QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.ttf` | Correcta | Falla | `ERROR: Unable to configure the FPGA.` |
+| Sketch original `Temperature_real` | `software/arduino/Temperature_real/FPGA_Bitstream.h` existente | Correcta | Correcta | `FPGA successfully configured!`, `DHT20 sensor detected.`, temperatura real y prediccion FPGA |
+| Proyecto base recompilado | `hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.ttf` | Correcta | Falla | `ERROR: Unable to configure the FPGA.` |
+| Proyecto optimizado low-power | `hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.ttf` | Correcta | Falla | `ERROR: Unable to configure the FPGA.` |
 
 La placa quedo restaurada al sketch original `Temperature_real` despues de las pruebas. En la lectura final por `COM4` se volvio a ver la configuracion correcta de la FPGA, deteccion del DHT20 y valores de ejemplo alrededor de `26.62 C` con prediccion FPGA alrededor de `26.34 C`.
 
@@ -372,18 +372,18 @@ La placa quedo restaurada al sketch original `Temperature_real` despues de las p
 
 | Fichero | Contenido |
 |---|---|
-| `comparativa_real_hw/base_serial.log` | Primer intento con bitstream base recompilado: fallo de configuracion FPGA |
-| `comparativa_real_hw/base_25_error_serial.log` | Repeticion con diagnostico adicional: mismo fallo de configuracion FPGA |
-| `comparativa_real_hw/lowpower_25_error_serial.log` | Intento con bitstream optimizado low-power: fallo de configuracion FPGA |
-| `comparativa_real_hw/original_restaurado_serial.log` | Restauracion del sketch original: FPGA y DHT20 correctos |
-| `comparativa_real_hw/original_restaurado_final_serial.log` | Segunda comprobacion del sketch original: FPGA y DHT20 correctos |
-| `comparativa_real_hw/original_restaurado_post_lowpower_serial.log` | Comprobacion final tras probar low-power: FPGA y DHT20 correctos |
+| `../evidence/hardware_validation/base_serial.log` | Primer intento con bitstream base recompilado: fallo de configuracion FPGA |
+| `../evidence/hardware_validation/base_25_error_serial.log` | Repeticion con diagnostico adicional: mismo fallo de configuracion FPGA |
+| `../evidence/hardware_validation/lowpower_25_error_serial.log` | Intento con bitstream optimizado low-power: fallo de configuracion FPGA |
+| `../evidence/hardware_validation/original_restaurado_serial.log` | Restauracion del sketch original: FPGA y DHT20 correctos |
+| `../evidence/hardware_validation/original_restaurado_final_serial.log` | Segunda comprobacion del sketch original: FPGA y DHT20 correctos |
+| `../evidence/hardware_validation/original_restaurado_post_lowpower_serial.log` | Comprobacion final tras probar low-power: FPGA y DHT20 correctos |
 
 ### 18.3 Interpretacion
 
 La comparativa real de consumo queda pendiente porque el hardware conectado no proporciona medida electrica. Ademas, los bitstreams `.ttf` generados con la version migrada a Quartus 25.1 se cargan en la flash del SAMD21, pero no pasan la configuracion de la FPGA mediante `FPGA.begin(32, 2)`.
 
-Esto apunta a un problema de generacion/empaquetado del bitstream o de compatibilidad con el flujo JTAG usado por la libreria `VidorPeripherals`, no necesariamente a un fallo funcional del cambio low-power en Verilog. El dato importante es que el bitstream original incluido en `Temperature_real/FPGA_Bitstream.h` si funciona en la placa, mientras que los `.ttf` generados ahora por Quartus 25.1 no arrancan la FPGA desde el sketch.
+Esto apunta a un problema de generacion/empaquetado del bitstream o de compatibilidad con el flujo JTAG usado por la libreria `VidorPeripherals`, no necesariamente a un fallo funcional del cambio low-power en Verilog. El dato importante es que el bitstream original incluido en `software/arduino/Temperature_real/FPGA_Bitstream.h` si funciona en la placa, mientras que los `.ttf` generados ahora por Quartus 25.1 no arrancan la FPGA desde el sketch.
 
 Para hacer una comparativa real completa habria que resolver primero la generacion de un `FPGA_Bitstream.h` compatible con la MKR Vidor 4000 a partir de cada proyecto Quartus y, despues, medir corriente fisica en las mismas condiciones para los dos sketches.
 
@@ -395,8 +395,8 @@ Validacion del 2026-09-08. Se recompilaron los proyectos base y lowpower, se reg
 
 | Archivo recibido | Comprobacion y uso |
 |---|---|
-| `MKRVIDOR4000/vidor_s_pins.qsf` | Los 131 destinos recuperados coinciden con el original. Ambos proyectos ahora incluyen directamente este archivo mediante una ruta relativa. |
-| `MKRVIDOR4000/vidor_s.sdc` | Referencia para los SDC adaptados de ambos proyectos. Se mantienen el reloj de entrada, los relojes PLL, el reloj de salida SDRAM y la separacion asincrona de TCK. |
+| `hardware/quartus/constraints/MKRVIDOR4000/vidor_s_pins.qsf` | Los 131 destinos recuperados coinciden con el original. Ambos proyectos ahora incluyen directamente este archivo mediante una ruta relativa. |
+| `hardware/quartus/constraints/MKRVIDOR4000/vidor_s.sdc` | Referencia para los SDC adaptados de ambos proyectos. Se mantienen el reloj de entrada, los relojes PLL, el reloj de salida SDRAM y la separacion asincrona de TCK. |
 | Copias dentro de `MKRVIDOR4000/MKRVIDOR4000` | Tienen hashes identicos a los archivos del nivel superior. |
 | Informes `.pin` despues de compilar | Los 138 pines asignados coinciden con la compilacion original en ubicacion, direccion y estandar electrico. Incluyen los pares diferenciales. |
 
@@ -471,24 +471,24 @@ La base funciona en esta prueba de placa pero incumple timing; eso impide garant
 
 | Evidencia | Archivo |
 |---|---|
-| Arranque y autopruebas base | [base_25_original_constraints_serial.log](comparativa_real_hw/base_25_original_constraints_serial.log) |
-| Arranque y autopruebas lowpower | [lowpower_25_original_constraints_serial.log](comparativa_real_hw/lowpower_25_original_constraints_serial.log) |
-| Potencia base vigente | [MKRVIDOR4000.pow.rpt](QuartusProject/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.rpt) |
-| Potencia lowpower vigente | [MKRVIDOR4000.pow.rpt](QuartusProject/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.rpt) |
-| Compilacion y cargas | `comparativa_real_hw/*_25_original_constraints_compile.log` y `*_upload.log` |
-| Conversion reutilizable | [Convert-VidorBitstream.ps1](tools/Convert-VidorBitstream.ps1) |
-| Captura y repeticion de prueba | [Capture-VidorSerial.ps1](tools/Capture-VidorSerial.ps1) |
+| Arranque y autopruebas base | [base_25_original_constraints_serial.log](../evidence/hardware_validation/base_25_original_constraints_serial.log) |
+| Arranque y autopruebas lowpower | [lowpower_25_original_constraints_serial.log](../evidence/hardware_validation/lowpower_25_original_constraints_serial.log) |
+| Potencia base vigente | [MKRVIDOR4000.pow.rpt](../../hardware/quartus/projects/ANeural_Network_power25/output_files/MKRVIDOR4000.pow.rpt) |
+| Potencia lowpower vigente | [MKRVIDOR4000.pow.rpt](../../hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.rpt) |
+| Compilacion y cargas | `../evidence/hardware_validation/*_25_original_constraints_compile.log` y `*_upload.log` |
+| Conversion reutilizable | [Convert-VidorBitstream.ps1](../../tools/Convert-VidorBitstream.ps1) |
+| Captura y repeticion de prueba | [Capture-VidorSerial.ps1](../../tools/Capture-VidorSerial.ps1) |
 
 Desde la raiz de DEEPCEL, despues de compilar Quartus, la conversion para lowpower es:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Convert-VidorBitstream.ps1 -InputPath .\QuartusProject\ANeural_Network_power25_lowpower\output_files\MKRVIDOR4000.ttf -OutputPath .\Temperature_real_lowpower_hwtest\FPGA_Bitstream.h
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Convert-VidorBitstream.ps1 -InputPath .\hardware\quartus\projects\ANeural_Network_power25_lowpower\output_files\MKRVIDOR4000.ttf -OutputPath .\software\arduino\Temperature_real_lowpower_hwtest\FPGA_Bitstream.h
 ```
 
 Despues se compila y carga `Temperature_real_lowpower_hwtest` para `arduino:samd:mkrvidor4000`. Con el puerto libre de otros monitores, se puede repetir la autoprueba y guardar 32 segundos de salida:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Capture-VidorSerial.ps1 -Port COM4 -Seconds 32 -RunSelfTest -OutputPath .\comparativa_real_hw\repeticion_lowpower_serial.log
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Capture-VidorSerial.ps1 -Port COM4 -Seconds 32 -RunSelfTest -OutputPath .\docs\evidence\hardware_validation\repeticion_lowpower_serial.log
 ```
 
 Los scripts no cambian la politica permanente de PowerShell. El sketch original `Temperature_real` conserva su bitstream original; para reproducir la version nueva debe abrirse la carpeta `Temperature_real_lowpower_hwtest`.
@@ -499,12 +499,12 @@ Validacion del 2026-09-09. Se ha anadido una version nueva separada del proyecto
 
 | Elemento | Ubicacion |
 |---|---|
-| Proyecto Quartus | `QuartusProject/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz` |
+| Proyecto Quartus | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz` |
 | Sketch Arduino | `Temperature_light_ultralowpower_seq_1mhz_samd_lowpower` |
-| Bitstream embebido | `Temperature_light_ultralowpower_seq_1mhz_samd_lowpower/FPGA_Bitstream.h` |
-| Power Analyzer | `QuartusProject/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.pow.rpt` |
-| Timing Analyzer | `QuartusProject/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.sta.rpt` |
-| Snapshot de evidencia | `comparativa_real_hw/quartus_snapshots/MKRVIDOR4000.ultralow_seq2mult_1mhz.pow.rpt` |
+| Bitstream embebido | `software/arduino/Temperature_light_ultralowpower_seq_1mhz_samd_lowpower/FPGA_Bitstream.h` |
+| Power Analyzer | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.pow.rpt` |
+| Timing Analyzer | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.sta.rpt` |
+| Snapshot de evidencia | `../evidence/hardware_validation/quartus_snapshots/MKRVIDOR4000.ultralow_seq2mult_1mhz.pow.rpt` |
 
 ### 20.1 Cambios aplicados
 

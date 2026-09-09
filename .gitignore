@@ -3,7 +3,7 @@
 .build/
 
 # Quartus generated databases and transient locks
-QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq/
+hardware/quartus/projects/ANeural_Network_power25_lowpower_light_q4_4_lowfreq/
 **/db/
 **/incremental_db/
 **/work/
