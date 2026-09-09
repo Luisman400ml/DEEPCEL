@@ -11,6 +11,14 @@ Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura, hu
 - Red neuronal: Q4.4, 8 entradas, 16 neuronas ocultas, 2 salidas
 - Bajo consumo: modo rafaga y reloj de red neuronal a 6 MHz
 
+## Variante con Arduino Low Power
+
+- Sketch Arduino: `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/`
+- Base FPGA: mismo bitstream y mismo proyecto Quartus que la variante actual.
+- Cambio: usa `ArduinoLowPower` para ejecutar `LowPower.idle(...)` entre muestras y reducir actividad del SAMD21.
+- Dependencias adicionales: `Arduino Low Power` y `RTCZero`.
+- Validacion: compilacion Arduino correcta con `arduino:samd:mkrvidor4000`.
+
 ## Documentacion
 
 - `ESTRATEGIAS_BAJO_CONSUMO_DEEPCEL.md`

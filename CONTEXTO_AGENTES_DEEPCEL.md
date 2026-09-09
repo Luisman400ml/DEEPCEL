@@ -20,7 +20,9 @@ Usar estas dos carpetas como referencia actual:
 | Parte | Ruta |
 |---|---|
 | Sketch Arduino actual | `Temperature_light_lowpower_hwtest_lowfreq/` |
+| Sketch Arduino con bajo consumo SAMD21 | `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/` |
 | Fichero principal Arduino | `Temperature_light_lowpower_hwtest_lowfreq/Temperature_light_lowpower_hwtest_lowfreq.ino` |
+| Fichero principal Arduino LowPower | `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower.ino` |
 | Proyecto Quartus actual | `QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq_6mhz/` |
 | Proyecto Quartus | `QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq_6mhz/MKRVIDOR4000.qpf` |
 | Top FPGA | `QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq_6mhz/MKRVIDOR4000_top.v` |
@@ -30,6 +32,8 @@ Usar estas dos carpetas como referencia actual:
 | Bitstream Quartus TTF | `QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq_6mhz/output_files/MKRVIDOR4000.ttf` |
 
 Las otras carpetas se conservan como historico, comparativas o proyectos previos. No tomarlas como variante final salvo que el usuario lo pida.
+
+La variante `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/` no cambia el modelo FPGA ni el bitstream. Es la version Arduino para probar reduccion de consumo del SAMD21 usando `ArduinoLowPower`.
 
 ## Sensores y conexiones
 
@@ -81,6 +85,7 @@ Hay dos optimizaciones funcionales ya aplicadas:
 |---|---|---|
 | Modo rafaga | Implementado | La red solo calcula cuando llega un par completo temperatura/luz. |
 | Menor frecuencia | Implementado | `wNN_CLK` usa `wCLK6`; PLL `clk0_divide_by = 8`, equivalente a 6 MHz. |
+| Bajo consumo SAMD21 | Implementado en variante separada | `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/` usa `LowPower.idle(...)` entre muestras. |
 
 Valores de Power Analyzer vectorless:
 
@@ -114,6 +119,19 @@ Uso conceptual para el sketch actual:
 // Tras leer DHT20/luz, enviar datos a FPGA, leer prediccion e imprimir:
 LowPower.idle(10000);
 ```
+
+Implementacion creada:
+
+| Elemento | Valor |
+|---|---|
+| Carpeta | `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/` |
+| Sketch | `Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower.ino` |
+| Modo usado | `LowPower.idle(ms)` |
+| Tamano de tramo idle | `LOW_POWER_IDLE_CHUNK_MS = 250` |
+| Bitstream FPGA | Reutiliza `FPGA_Bitstream.h` de la variante lowfreq 6 MHz |
+| Validacion local | Compila con `arduino:samd:mkrvidor4000` |
+
+El bucle procesa comandos serie, calcula el tiempo restante hasta la siguiente muestra y entra en `LowPower.idle(...)` por tramos de hasta 250 ms. No duerme durante configuracion de FPGA, selftest, lectura DHT20, lectura de luz, escritura de registros FPGA, lectura de predicciones ni envio por `Serial`.
 
 Modos relevantes:
 
@@ -183,7 +201,8 @@ Dependencia externa Arduino:
 | Libreria | Version usada | Uso |
 |---|---:|---|
 | `DHT20` | `0.3.3` | Lectura de temperatura y humedad por I2C. |
-| `ArduinoLowPower` | opcional | Dormir el SAMD21 entre muestras si se implementa la siguiente optimizacion de consumo. |
+| `ArduinoLowPower` | `1.2.2` en variante SAMD lowpower | Dormir el SAMD21 entre muestras con `LowPower.idle(...)`. |
+| `RTCZero` | `1.6.0` en variante SAMD lowpower | Dependencia instalada automaticamente por `ArduinoLowPower`. |
 | `Wire` | core SAMD | Bus I2C. |
 | `SPI` | core SAMD | Dependencia de soporte de la plataforma. |
 
@@ -265,6 +284,12 @@ Abrir en Arduino IDE la carpeta:
 Temperature_light_lowpower_hwtest_lowfreq/
 ```
 
+Para probar la variante con `ArduinoLowPower`, abrir:
+
+```text
+Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/
+```
+
 Seleccionar:
 
 ```text
@@ -278,6 +303,15 @@ Compilar y subir por CLI:
 cd C:\Users\PC\OneDrive\Escritorio\DEEPCEL
 & "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\Temperature_light_lowpower_hwtest_lowfreq
 & "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" upload -p COM4 --fqbn arduino:samd:mkrvidor4000 .\Temperature_light_lowpower_hwtest_lowfreq
+```
+
+Compilar y subir la variante con `ArduinoLowPower`:
+
+```powershell
+cd C:\Users\PC\OneDrive\Escritorio\DEEPCEL
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" lib install "Arduino Low Power"
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" compile --fqbn arduino:samd:mkrvidor4000 .\Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" upload -p COM4 --fqbn arduino:samd:mkrvidor4000 .\Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower
 ```
 
 Si `COM4` esta ocupado, normalmente hay un `serial-monitor.exe` abierto desde Arduino IDE. Cerrar el monitor serie antes de subir.
@@ -298,4 +332,5 @@ Si `COM4` esta ocupado, normalmente hay un `serial-monitor.exe` abierto desde Ar
 - No vender los mW de Quartus como medida real de placa: son estimaciones vectorless.
 - Para demostrar consumo real hace falta medir corriente externa o usar actividad real VCD/SAIF.
 - `ArduinoLowPower` reduce consumo del SAMD21 entre muestras, pero no debe presentarse como apagado de la FPGA.
+- La variante con `ArduinoLowPower` esta compilada; validar en placa que el USB serie y DHT20 siguen estables tras varios ciclos antes de tomar medidas de consumo.
 - El proyecto parcial `QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq/` esta ignorado y no debe usarse.
