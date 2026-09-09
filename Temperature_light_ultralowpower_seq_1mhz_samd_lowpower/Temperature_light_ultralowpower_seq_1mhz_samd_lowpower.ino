@@ -1,11 +1,10 @@
 #include "FPGA.h"
 #include "DHT20.h"
-#include <ArduinoLowPower.h>
 
 const unsigned long SAMPLE_INTERVAL_MS = 10000;
-const unsigned long LOW_POWER_IDLE_CHUNK_MS = 250;
+const unsigned long WAIT_CHUNK_MS = 250;
 const uint8_t LIGHT_SENSOR_PIN = A2;
-const char BUILD_DESCRIPTION[] = "Build: Quartus 25.1 ultralowpower light Q4.4 sequential MAC + 1 MHz NN clock + SAMD21 idle low power, DHT20 humidity, Grove Light Sensor on A2";
+const char BUILD_DESCRIPTION[] = "Build: Quartus 25.1 ultralowpower light Q4.4 sequential MAC + 1 MHz NN clock + stable SAMD delay wait, DHT20 humidity, Grove Light Sensor on A2";
 
 const float TEMP_MIN = 24.612081304273765f;
 const float TEMP_MAX = 37.95430094132428f;
@@ -112,7 +111,7 @@ static void handleSerialCommands() {
   }
 }
 
-static void idleUntilNextSample(unsigned long nowMs, unsigned long lastSampleStartedMs, unsigned long sampleIntervalMs) {
+static void waitUntilNextSample(unsigned long nowMs, unsigned long lastSampleStartedMs, unsigned long sampleIntervalMs) {
   if (sampleIntervalMs == 0) {
     return;
   }
@@ -122,13 +121,20 @@ static void idleUntilNextSample(unsigned long nowMs, unsigned long lastSampleSta
     return;
   }
 
-  unsigned long idleMs = sampleIntervalMs - elapsedMs;
-  if (idleMs > LOW_POWER_IDLE_CHUNK_MS) {
-    idleMs = LOW_POWER_IDLE_CHUNK_MS;
+  unsigned long waitMs = sampleIntervalMs - elapsedMs;
+  if (waitMs > WAIT_CHUNK_MS) {
+    waitMs = WAIT_CHUNK_MS;
   }
 
   Serial.flush();
-  LowPower.idle(idleMs);
+  delay(waitMs);
+}
+
+static void recoverDht20Bus() {
+  Wire.end();
+  delay(20);
+  Wire.begin();
+  sensor1.begin();
 }
 
 void setup() {
@@ -166,7 +172,7 @@ void loop() {
   static unsigned long sampleIntervalMs = 0;
   const unsigned long sampleStartedMs = millis();
   if (sampleStartedMs - lastSampleStartedMs < sampleIntervalMs) {
-    idleUntilNextSample(sampleStartedMs, lastSampleStartedMs, sampleIntervalMs);
+    waitUntilNextSample(sampleStartedMs, lastSampleStartedMs, sampleIntervalMs);
     return;
   }
   lastSampleStartedMs = sampleStartedMs;
@@ -180,6 +186,7 @@ void loop() {
     Serial.print(dht20StatusMessage(status));
     Serial.println(")");
     sampleIntervalMs = 2000;
+    recoverDht20Bus();
     return;
   }
 
