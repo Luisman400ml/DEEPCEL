@@ -91,6 +91,50 @@ Valores de Power Analyzer vectorless:
 
 La confianza del Power Analyzer es `Low` porque no hay actividad real VCD/SAIF. La comparativa es util solo porque ambas variantes se midieron con la misma metodologia.
 
+## Arduino Low Power
+
+La libreria oficial `ArduinoLowPower` permite usar modos de bajo consumo del microcontrolador SAMD21 de la MKR Vidor. En este proyecto solo afectaria al SAMD21 entre muestras; no apaga automaticamente la FPGA Cyclone 10, el PLL ni los I/O de la FPGA.
+
+Referencias:
+
+- `https://github.com/arduino-libraries/ArduinoLowPower`
+- `https://www.arduinolibraries.info/libraries/arduino-low-power`
+
+Instalacion por Arduino CLI:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe" lib install "Arduino Low Power"
+```
+
+Uso conceptual para el sketch actual:
+
+```cpp
+#include <ArduinoLowPower.h>
+
+// Tras leer DHT20/luz, enviar datos a FPGA, leer prediccion e imprimir:
+LowPower.idle(10000);
+```
+
+Modos relevantes:
+
+| API | Uso | Riesgo practico en este proyecto |
+|---|---|---|
+| `LowPower.idle(ms)` | Sueno ligero temporizado. | Mejor primera prueba porque conserva mejor la depuracion por USB serie. |
+| `LowPower.sleep(ms)` | Sueno mas profundo temporizado. | Puede desconectar o alterar el comportamiento de USB Serial; validar `Wire`/DHT20 al despertar. |
+| `LowPower.deepSleep(ms)` | En SAMD se comporta practicamente como `sleep`. | Mismo riesgo de USB/I2C; no empezar por aqui durante depuracion. |
+| `LowPower.attachInterruptWakeup(pin, callback, mode)` | Despertar por GPIO. | Util solo si se quiere despertar por evento externo, no necesario para muestreo cada 10 s. |
+| `LowPower.attachAdcInterrupt(...)` | Despertar por ventana ADC en SAMD. | Podria usarse con el sensor de luz, pero complica el flujo y debe validarse aparte. |
+
+Integracion recomendada si se prueba:
+
+1. Mantener `SAMPLE_INTERVAL_MS = 10000`.
+2. Sustituir la espera pasiva entre muestras por `LowPower.idle(...)` en tramos cortos o por el tiempo restante hasta la siguiente muestra.
+3. No dormir mientras se esta configurando la FPGA, ejecutando `runFpgaSelfTest`, leyendo DHT20, leyendo `A2`, escribiendo registros FPGA o imprimiendo por serie.
+4. Empezar con `idle`, verificar que siguen funcionando `T`, `C`, `P` y que no aumentan errores `DHT20 read error`.
+5. Solo despues probar `sleep`; asumir que la depuracion USB puede ser menos comoda.
+
+Resultado esperado: menor consumo del SAMD21 durante los 10 segundos entre muestras. Resultado no garantizado: gran reduccion de potencia total de placa, porque la FPGA sigue alimentada y configurada. Para medir el impacto real hace falta corriente externa o instrumentacion equivalente.
+
 ## Salida serie esperada
 
 Baudios: `9600`.
@@ -139,6 +183,7 @@ Dependencia externa Arduino:
 | Libreria | Version usada | Uso |
 |---|---:|---|
 | `DHT20` | `0.3.3` | Lectura de temperatura y humedad por I2C. |
+| `ArduinoLowPower` | opcional | Dormir el SAMD21 entre muestras si se implementa la siguiente optimizacion de consumo. |
 | `Wire` | core SAMD | Bus I2C. |
 | `SPI` | core SAMD | Dependencia de soporte de la plataforma. |
 
@@ -252,4 +297,5 @@ Si `COM4` esta ocupado, normalmente hay un `serial-monitor.exe` abierto desde Ar
 - No cambiar el numero de registros de `FPGA.begin(32, 4)` sin cambiar tambien el top Quartus y el selftest.
 - No vender los mW de Quartus como medida real de placa: son estimaciones vectorless.
 - Para demostrar consumo real hace falta medir corriente externa o usar actividad real VCD/SAIF.
+- `ArduinoLowPower` reduce consumo del SAMD21 entre muestras, pero no debe presentarse como apagado de la FPGA.
 - El proyecto parcial `QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq/` esta ignorado y no debe usarse.
