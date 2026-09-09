@@ -492,3 +492,108 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Capture-VidorSer
 ```
 
 Los scripts no cambian la politica permanente de PowerShell. El sketch original `Temperature_real` conserva su bitstream original; para reproducir la version nueva debe abrirse la carpeta `Temperature_real_lowpower_hwtest`.
+
+## 20. Variante ultralow-power activa por rafaga
+
+Validacion del 2026-09-09. Se ha anadido una version nueva separada del proyecto anterior:
+
+| Elemento | Ubicacion |
+|---|---|
+| Proyecto Quartus | `QuartusProject/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz` |
+| Sketch Arduino | `Temperature_light_ultralowpower_seq_1mhz_samd_lowpower` |
+| Bitstream embebido | `Temperature_light_ultralowpower_seq_1mhz_samd_lowpower/FPGA_Bitstream.h` |
+| Power Analyzer | `QuartusProject/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.pow.rpt` |
+| Timing Analyzer | `QuartusProject/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.sta.rpt` |
+| Snapshot de evidencia | `comparativa_real_hw/quartus_snapshots/MKRVIDOR4000.ultralow_seq2mult_1mhz.pow.rpt` |
+
+### 20.1 Cambios aplicados
+
+| Estrategia | Cambio realizado | Impacto esperado |
+|---|---|---|
+| Red neuronal activa por rafaga | `eco_nn_top.v` pasa de calcular la red completa en paralelo a una FSM secuencial que acumula entradas, neuronas ocultas y salidas solo cuando llegan nuevas muestras. | Reduce logica conmutando de forma simultanea y baja mucho el consumo propio de `eco_nn_top`. |
+| Reloj de modelo a 1 MHz | `SYSTEM_PLL_altpll.v` genera `clk[0]` a 1 MHz para la red; `clk[1]` se mantiene a 120 MHz para el puente JTAG compatible con Vidor. | Reduce la potencia dinamica asociada al dominio del modelo sin romper la carga JTAG. |
+| Top minimo | `MKRVIDOR4000_top.v` deja sin actividad util HDMI, MIPI, SDRAM, Flash, NINA, PCIe y pines MKR no usados. | Evita conmutaciones innecesarias de perifericos de plantilla. |
+| Optimizacion de Quartus | `OPTIMIZATION_MODE` queda en `AGGRESSIVE POWER`. | Permite al fitter priorizar potencia frente a rendimiento. |
+| Bajo consumo SAMD21 | El sketch usa `ArduinoLowPower` con `LowPower.idle()` entre muestras de 10 s. | Reduce consumo del microcontrolador entre lecturas; no aparece en Power Analyzer porque Quartus solo estima la FPGA. |
+
+Se probo tambien una variante con un unico multiplicador reutilizado. Quartus estimo `201.89 mW`, ligeramente peor que la version final de dos multiplicadores (`201.78 mW`), por lo que se conserva la version de dos multiplicadores.
+
+### 20.2 Comparacion de potencia estimada
+
+Power Analyzer se ejecuto con el mismo metodo vectorless. La confianza sigue siendo `Low` porque no se aporta actividad real `.vcd`/`.saif`; por tanto, las cifras son utiles como comparacion relativa entre compilaciones, no como medida fisica de la placa completa.
+
+| Metrica | Base 25.1 | Lowpower 24 MHz | Luz Q4.4 6 MHz | Ultralow seq 1 MHz | Mejora ultralow vs base |
+|---|---:|---:|---:|---:|---:|
+| Potencia termica total | 234.21 mW | 212.53 mW | 206.64 mW | 201.78 mW | -32.43 mW (-13.85 %) |
+| Core dynamic | 45.81 mW | 24.51 mW | 18.77 mW | 12.61 mW | -33.20 mW (-72.47 %) |
+| Core static | 52.83 mW | 52.77 mW | 52.69 mW | 52.48 mW | -0.35 mW |
+| I/O thermal | 135.57 mW | 135.25 mW | 135.19 mW | 136.69 mW | +1.12 mW |
+| Jerarquia `eco_nn_top:uut` | 22.86 mW | 4.71 mW | 0.96 mW | 0.06 mW | -22.80 mW (-99.74 %) |
+| Jerarquia PLL | 20.42 mW | 18.15 mW | 16.28 mW | 11.54 mW | -8.88 mW |
+| Jerarquia JTAG | 1.01 mW | 1.00 mW | 0.95 mW | 0.63 mW | -0.38 mW |
+| Toggle medio | 12.315 Mtrans/s | 2.945 Mtrans/s | 1.357 Mtrans/s | 2.284 Mtrans/s | -10.031 Mtrans/s |
+
+La variante ultralow reduce la potencia total frente a todas las versiones previas usadas como referencia:
+
+| Comparacion | Diferencia total | Diferencia core dynamic |
+|---|---:|---:|
+| Ultralow seq 1 MHz vs base 25.1 | -32.43 mW (-13.85 %) | -33.20 mW (-72.47 %) |
+| Ultralow seq 1 MHz vs lowpower 24 MHz | -10.75 mW (-5.06 %) | -11.90 mW (-48.55 %) |
+| Ultralow seq 1 MHz vs luz Q4.4 6 MHz | -4.86 mW (-2.35 %) | -6.16 mW (-32.82 %) |
+
+El unico bloque que no mejora en la ultima comparacion es I/O, que sube de `135.19 mW` a `136.69 mW`. Aun asi, el ahorro del core y del PLL compensa ese incremento y la potencia total queda por debajo de la version previa. Para demostrar el efecto aislado de cada tecnica habria que conservar una compilacion incremental por estrategia; con los datos actuales queda validado el resultado combinado.
+
+### 20.3 Recursos y timing
+
+| Metrica | Luz Q4.4 6 MHz | Ultralow seq 1 MHz |
+|---|---:|---:|
+| Logic elements | 2765 / 15408 | 749 / 15408 |
+| Funciones combinacionales | 2721 | 525 |
+| Registros | 375 | 473 |
+| Multiplicadores 9-bit | 0 / 112 | 2 / 112 |
+| PLLs | 1 / 4 | 1 / 4 |
+| Peor setup slack | +6.882 ns | +7.160 ns |
+| Setup slack dominio NN | +151.649 ns a 6 MHz | +984.281 ns a 1 MHz |
+| Peor hold slack | +0.186 ns | +0.187 ns |
+| Compilacion | 0 errores | 0 errores |
+
+La reduccion de `logic elements` viene de sustituir la red combinacional/paralela por una maquina secuencial. Aumentan los registros porque la FSM guarda indices, acumulador y salidas intermedias. Los dos multiplicadores dedicados son aceptables porque el Power Analyzer los estima mas eficientes que forzar una version de un solo multiplicador para este caso concreto.
+
+### 20.4 Validacion funcional y plots
+
+La version se compilo y cargo en la MKR Vidor 4000 conectada. La salida serie observada incluyo:
+
+```text
+FPGA successfully configured!
+Build: Quartus 25.1 ultralowpower light Q4.4 sequential MAC + 1 MHz NN clock + SAMD21 idle low power, DHT20 humidity, Grove Light Sensor on A2
+SELFTEST PASS multisensor_q4_4 vectors=128 reads=512 failures=0
+```
+
+La autoprueba compara la FPGA contra una referencia software con los mismos pesos, biases, truncamiento Q4.4 y ReLU. El resultado `failures=0` indica que la prediccion de temperatura y luz no cambia frente al modelo esperado para los 128 vectores deterministas de prueba.
+
+El plot por defecto del monitor serie queda en ingles, con historicos como arrays y cada variable en una linea:
+
+```text
+TemperatureHistory_C:[25.88,25.88,25.87,25.87]
+LightHistory_ADC:[952,512,889,862]
+Temperature_C:25.87
+Light_ADC:862
+PredictionTemperature_C:24.61
+PredictionLight_model:380
+Humidity_pct:53.98
+```
+
+En modo CSV, activable enviando `C` por serie, la cabecera es:
+
+```text
+record,time_ms,temperature_history_c,humidity_rh_pct,light_history_adc,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4
+```
+
+La humedad del DHT20 se mantiene como medida y plot de Arduino, pero no entra en la red neuronal actual. Para que la humedad afecte a la prediccion habria que reentrenar el modelo, ampliar entradas en VHDL y regenerar la autoprueba.
+
+### 20.5 Limitaciones
+
+1. La estimacion de Quartus no mide la corriente real de la placa; para eso sigue haciendo falta medidor USB, fuente de laboratorio o shunt.
+2. `ArduinoLowPower` reduce la actividad del SAMD21 entre muestras, pero no apaga la FPGA ni queda reflejado en los mW de Power Analyzer.
+3. Power Analyzer mantiene confianza `Low` por ausencia de actividad real `.vcd`/`.saif`.
+4. La funcionalidad validada es la interfaz actual: ventana de 4 muestras de temperatura y luz, prediccion Q4.4 de ambas salidas y humedad solo como dato auxiliar.
