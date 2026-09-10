@@ -1,6 +1,6 @@
 # DEEPCEL
 
-Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura, humedad y luz, prediccion mediante red neuronal en FPGA y dashboard Python por puerto serie.
+Proyecto Arduino/FPGA para Arduino MKR Vidor 4000. El estado operativo actual usa DHT20 por I2C para temperatura/humedad y una red neuronal en FPGA para prediccion de temperatura. La integracion temperatura+luz queda conservada en el repo como trabajo en curso.
 
 ## Estructura del repositorio
 
@@ -10,8 +10,8 @@ Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura, hu
 | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/` | Proyecto Quartus multisensor Q4.4 temperatura+luz. |
 | `hardware/quartus/constraints/` | Constraints originales de la MKR Vidor 4000. |
 | `hardware/verilog_reference/common_rtl/` | RTL suelto historico/de referencia, no tratado como proyecto Quartus completo. |
-| `software/arduino/Temperature_real_lowpower_hwtest/` | Sketch estable de temperatura/humedad. |
-| `software/arduino/Temperature_light_i2c_q4_4_hwtest/` | Sketch multisensor I2C con prediccion de temperatura y luz. |
+| `software/arduino/Temperature_real_lowpower_hwtest/` | Sketch estable actual de temperatura/humedad. |
+| `software/arduino/Temperature_light_i2c_q4_4_hwtest/` | Sketch multisensor I2C con prediccion de temperatura y luz; no es la version estable actual. |
 | `software/python/base_model/` | Scripts y modelo Python principales. |
 | `software/python/Temperature_and_Light_Q4.4_ANN/` | Paquete original de entrenamiento multisensor; las plantillas Arduino/Quartus historicas se retiraron del arbol activo. |
 | `serial_dashboard/` | App Python/web offline y puente opcional hacia ThingsBoard. |
@@ -20,49 +20,48 @@ Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura, hu
 | `docs/evidence/hardware_validation/` | Logs de compilacion, carga, serie y snapshots de reportes. |
 | `tools/` | Scripts auxiliares y sketches de diagnostico, incluido un scanner I2C. |
 
-## Variante actual recomendada
+## Variante operativa actual
 
 | Parte | Ruta |
 |---|---|
-| Sketch Arduino | `software/arduino/Temperature_light_i2c_q4_4_hwtest/` |
-| Fichero `.ino` | `software/arduino/Temperature_light_i2c_q4_4_hwtest/Temperature_light_i2c_q4_4_hwtest.ino` |
-| Proyecto Quartus | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/` |
-| Proyecto `.qpf` | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/MKRVIDOR4000.qpf` |
-| Bitstream Quartus | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.ttf` |
-| Bitstream Arduino | `software/arduino/Temperature_light_i2c_q4_4_hwtest/FPGA_Bitstream.h` |
+| Sketch Arduino estable | `software/arduino/Temperature_real_lowpower_hwtest/` |
+| Fichero `.ino` | `software/arduino/Temperature_real_lowpower_hwtest/Temperature_real_lowpower_hwtest.ino` |
+| Proyecto Quartus estable | `hardware/quartus/projects/ANeural_Network_power25_lowpower/` |
+| Proyecto `.qpf` | `hardware/quartus/projects/ANeural_Network_power25_lowpower/MKRVIDOR4000.qpf` |
+| Bitstream Arduino | `software/arduino/Temperature_real_lowpower_hwtest/FPGA_Bitstream.h` |
 
 Sensores:
 
 - DHT20 por I2C para temperatura y humedad.
-- Sensor de luz digital I2C compatible en SDA/SCL. El firmware detecta TSL2561, BH1750, VEML7700 y SI114x/SI1145 en `0x60`.
-- Si el modulo fisico es `Grove - Light Sensor` a secas, Seeed lo documenta como analogico: debe ir a un pin analogico o a un ADC I2C externo. En SDA/SCL no aparece como dispositivo I2C.
+- No usar A2 en la version actual. El cableado objetivo del usuario es SDA/SCL.
 
-Validacion hardware del 2026-09-10 en Raspberry Pi: la MKR carga el sketch multisensor, configura la FPGA, pasa el selftest Q4.4 y mantiene muestras de DHT20. El escaneo I2C vio `0x19`, `0x38`, `0x3C`, `0x6B` y `0x77`; no vio un sensor de luz I2C soportado, por lo que la luz queda marcada como `NO_SENSOR` y se usa fallback hasta corregir el modulo/cableado.
+Validacion hardware local del 2026-09-10: la MKR carga `Temperature_real_lowpower_hwtest`, configura la FPGA, imprime `FPGA successfully configured!`, pasa `SELFTEST PASS vectors=128 reads=256 failures=0` y emite filas `DATA` con temperatura, humedad y prediccion. Se observaron avisos I2C puntuales del DHT20, pero el firmware siguio entregando muestras validas.
 
 Modelo:
 
-- Red Q4.4 con 8 entradas: 4 muestras de temperatura y 4 muestras de luz.
-- 8 neuronas ocultas ReLU.
-- 2 salidas: prediccion de temperatura y prediccion de luz.
-- La humedad se mide y se imprime, pero no entra en la red neuronal actual.
+- Red estable de temperatura con 4 muestras historicas.
+- Salida: prediccion de temperatura.
+- La humedad se mide y se imprime, pero no entra en la red neuronal estable.
 
-Variante de respaldo:
+Variante multisensor no estable:
 
 | Parte | Ruta |
 |---|---|
-| Sketch temperatura/humedad estable | `software/arduino/Temperature_real_lowpower_hwtest/` |
-| Proyecto Quartus temperatura estable | `hardware/quartus/projects/ANeural_Network_power25_lowpower/` |
+| Sketch temperatura+luz | `software/arduino/Temperature_light_i2c_q4_4_hwtest/` |
+| Proyecto Quartus temperatura+luz | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/` |
+
+El escaneo I2C de pruebas vio `0x38`, `0x3C`, `0x60`, `0x6B` y a veces `0x77`, pero no quedo validada una lectura real y estable de luz. No tratar esa variante como lista para despliegue.
 
 ## Bajo consumo actual
 
-La variante recomendada combina:
+La variante multisensor de bajo consumo queda conservada para trabajo posterior y combina:
 
 - red neuronal secuencial activa por rafaga cuando llega una muestra nueva;
 - reloj de modelo a 1 MHz;
 - top FPGA reducido con perifericos no usados sin actividad util;
 - salida serie texto/CSV para el dashboard Python.
 
-El sketch multisensor usa `FPGA.begin(32, 4)`: registros 0/1 para muestras Q4.4 de temperatura/luz y registros 2/3 como pulsos `ready`.
+El sketch estable actual usa la interfaz de temperatura incluida en `Temperature_real_lowpower_hwtest`. El sketch multisensor usa `FPGA.begin(32, 4)`: registros 0/1 para muestras Q4.4 de temperatura/luz y registros 2/3 como pulsos `ready`.
 
 Power Analyzer estima `201.78 mW` para la FPGA en la variante ultralow multisensor. La confianza del analisis sigue siendo `Low` porque no se usa actividad real `.vcd`/`.saif`.
 
@@ -72,7 +71,7 @@ No se usa `ArduinoLowPower` en el sketch definitivo porque dio problemas de esta
 
 La opcion principal es la app local en `http://localhost:8501`, que no necesita WiFi ni internet si se usa desde la propia Raspberry.
 
-La app web muestra medidas, predicciones, historicos, cuantizados Q4.4 y estados DHT20/luz. Incluye `Reset Serial` para reabrir el puerto y `Reset Board` para pedir al firmware un reinicio de la MKR por comando serie `R`.
+La app web puede usarse para monitorizacion por puerto serie. En el estado estable actual deben esperarse temperatura, humedad y prediccion de temperatura. Incluye `Reset Serial`; `Reset Board` depende de que el sketch cargado implemente el comando serie `R`.
 
 ThingsBoard queda como espejo opcional para demos con red: `serial_dashboard/deepcel_thingsboard_bridge.py` lee los eventos de la app local y publica telemetria en ThingsBoard sin abrir de nuevo el puerto serie.
 
