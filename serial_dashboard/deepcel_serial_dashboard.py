@@ -402,6 +402,7 @@ class SerialReader:
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
         self._serial_lock = threading.Lock()
+        self._restart_lock = threading.Lock()
         self._serial: serial.Serial | None = None
 
     def start(self) -> None:
@@ -413,12 +414,30 @@ class SerialReader:
 
     def stop(self) -> None:
         self._stop.set()
-        if self._thread:
-            self._thread.join(timeout=3)
         with self._serial_lock:
             if self._serial:
                 self._serial.close()
                 self._serial = None
+        if self._thread:
+            self._thread.join(timeout=3)
+
+    def restart(self) -> dict[str, Any]:
+        with self._restart_lock:
+            self.store.set_status(
+                state="restarting",
+                message="resetting serial connection",
+                connected_at=None,
+            )
+            self.stop()
+            self.start()
+            self.store.set_status(
+                state="connecting",
+                port=self.requested_port,
+                baud=self.baud,
+                message="reopening serial port",
+                connected_at=None,
+            )
+            return self.store.status()
 
     def send_command(self, command: str) -> bool:
         payload = command.encode("ascii", errors="ignore")[:1]
@@ -606,6 +625,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             command = str(data.get("command", ""))[:1]
             ok = self.server.reader.send_command(command)
             self.send_json({"ok": ok, "command": command})
+        elif parsed.path == "/api/reset":
+            status = self.server.reader.restart()
+            self.send_json({"ok": True, "status": status})
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -719,6 +741,11 @@ INDEX_HTML = r"""<!doctype html>
       min-height: 34px;
     }
     button:hover, a.button:hover { border-color: #9eb0bf; }
+    button:disabled {
+      cursor: wait;
+      color: #80909f;
+      background: #f0f3f6;
+    }
     button.primary {
       background: var(--teal);
       border-color: var(--teal);
@@ -914,6 +941,7 @@ INDEX_HTML = r"""<!doctype html>
     <div class="toolbar">
       <button class="primary" id="csvBtn" type="button">CSV</button>
       <button id="testBtn" type="button">Test</button>
+      <button id="resetBtn" type="button">Reset Serial</button>
       <a class="button" href="/download.csv">Export</a>
     </div>
   </header>
@@ -1191,6 +1219,22 @@ INDEX_HTML = r"""<!doctype html>
       });
     }
 
+    async function resetSerial() {
+      const button = $("resetBtn");
+      button.disabled = true;
+      button.textContent = "Resetting";
+      try {
+        const response = await fetch("/api/reset", { method: "POST" });
+        const result = await response.json();
+        if (result.status) updateStatus(result.status);
+      } finally {
+        setTimeout(() => {
+          button.disabled = false;
+          button.textContent = "Reset Serial";
+        }, 800);
+      }
+    }
+
     document.querySelectorAll(".tab").forEach((button) => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
@@ -1203,6 +1247,7 @@ INDEX_HTML = r"""<!doctype html>
 
     $("csvBtn").addEventListener("click", () => command("C"));
     $("testBtn").addEventListener("click", () => command("T"));
+    $("resetBtn").addEventListener("click", resetSerial);
 
     async function loadInitialData() {
       const status = await fetch("/api/status").then((r) => r.json());

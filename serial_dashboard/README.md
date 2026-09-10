@@ -32,6 +32,8 @@ From another device on the same network, use the Raspberry Pi IP address and por
 
 If the board changes port after a USB reset, the app waits and scans the available serial ports again.
 
+Use the `Reset Serial` button if the MKR is unplugged, reconnects on a new USB device, or stops streaming. The button closes the current serial handle, scans/opens the port again, and sends `C` to restore CSV mode.
+
 ## Dependencies
 
 ```bash
