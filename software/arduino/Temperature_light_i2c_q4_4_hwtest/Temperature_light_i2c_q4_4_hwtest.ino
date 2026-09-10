@@ -32,7 +32,8 @@ enum LightSensorKind : uint8_t {
   LIGHT_SENSOR_NONE = 0,
   LIGHT_SENSOR_TSL2561,
   LIGHT_SENSOR_BH1750,
-  LIGHT_SENSOR_VEML7700
+  LIGHT_SENSOR_VEML7700,
+  LIGHT_SENSOR_SI114X
 };
 
 struct LightSensorState {
@@ -52,6 +53,8 @@ const char* lightSensorName(LightSensorKind kind) {
       return "BH1750";
     case LIGHT_SENSOR_VEML7700:
       return "VEML7700";
+    case LIGHT_SENSOR_SI114X:
+      return "SI114x";
     default:
       return "none";
   }
@@ -164,6 +167,60 @@ static bool initVeml7700(uint8_t address) {
   return i2cWrite16LE(address, 0x00, 0x0000);
 }
 
+static bool writeSi114xParam(uint8_t address, uint8_t parameter, uint8_t value) {
+  if (!i2cWrite8(address, 0x17, value)) {
+    return false;
+  }
+  if (!i2cWrite8(address, 0x18, uint8_t(parameter | 0xA0))) {
+    return false;
+  }
+  delay(2);
+  uint8_t readback = 0;
+  return i2cRead8(address, 0x2E, readback);
+}
+
+static bool initSi114x(uint8_t address) {
+  if (!i2cPing(address)) {
+    return false;
+  }
+
+  uint8_t partId = 0;
+  if (!i2cRead8(address, 0x00, partId) || partId != 0x45) {
+    return false;
+  }
+
+  i2cWrite8(address, 0x08, 0x00);
+  i2cWrite8(address, 0x09, 0x00);
+  i2cWrite8(address, 0x04, 0x00);
+  i2cWrite8(address, 0x05, 0x00);
+  i2cWrite8(address, 0x06, 0x00);
+  i2cWrite8(address, 0x03, 0x00);
+  i2cWrite8(address, 0x21, 0xFF);
+  if (!i2cWrite8(address, 0x18, 0x01)) {
+    return false;
+  }
+  delay(100);
+  if (!i2cWrite8(address, 0x07, 0x17)) {
+    return false;
+  }
+  delay(10);
+
+  if (!writeSi114xParam(address, 0x01, 0x10)) {
+    return false;
+  }
+  if (!writeSi114xParam(address, 0x10, 0x07)) {
+    return false;
+  }
+  if (!writeSi114xParam(address, 0x11, 0x00)) {
+    return false;
+  }
+  if (!writeSi114xParam(address, 0x12, 0x20)) {
+    return false;
+  }
+
+  return true;
+}
+
 static bool readTsl2561(float& lightValue) {
   uint16_t ch0 = 0;
   uint16_t ch1 = 0;
@@ -209,6 +266,20 @@ static bool readVeml7700(float& lightValue) {
   return true;
 }
 
+static bool readSi114x(float& lightValue) {
+  if (!i2cWrite8(lightSensor.address, 0x18, 0x06)) {
+    return false;
+  }
+  delay(30);
+
+  uint16_t raw = 0;
+  if (!i2cRead16LE(lightSensor.address, 0x22, raw)) {
+    return false;
+  }
+  lightValue = float(raw);
+  return true;
+}
+
 static bool detectLightSensor() {
   const uint8_t tslAddresses[] = {0x29, 0x39, 0x49};
   for (unsigned index = 0; index < sizeof(tslAddresses); ++index) {
@@ -236,6 +307,13 @@ static bool detectLightSensor() {
     return true;
   }
 
+  if (initSi114x(0x60)) {
+    lightSensor.kind = LIGHT_SENSOR_SI114X;
+    lightSensor.address = 0x60;
+    delay(30);
+    return true;
+  }
+
   lightSensor.kind = LIGHT_SENSOR_NONE;
   lightSensor.address = 0;
   return false;
@@ -252,6 +330,9 @@ static bool readLightSensor(float& lightValue) {
       break;
     case LIGHT_SENSOR_VEML7700:
       ok = readVeml7700(lightValue);
+      break;
+    case LIGHT_SENSOR_SI114X:
+      ok = readSi114x(lightValue);
       break;
     default:
       ok = false;
@@ -339,7 +420,7 @@ static void printI2cScan() {
 
 static void startI2cBus() {
   Wire.begin();
-  Wire.setClock(50000);
+  Wire.setClock(100000);
   Wire.setTimeout(50);
 }
 
@@ -368,7 +449,7 @@ static bool readDht20Stable(float& temperature, float& humidity, const char*& dh
 
   dhtErrorCount++;
   consecutiveDhtErrors++;
-  if (status != DHT20_ERROR_LASTREAD && consecutiveDhtErrors >= 3) {
+  if (status != DHT20_ERROR_LASTREAD) {
     recoverDht20Bus();
     consecutiveDhtErrors = 0;
     dhtStatus = dhtHasValidSample ? "RECOVERED_STALE" : "RECOVERING";

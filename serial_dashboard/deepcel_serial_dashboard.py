@@ -36,6 +36,7 @@ except ImportError as exc:  # pragma: no cover - handled at runtime.
 
 DEFAULT_BAUD = 9600
 DEFAULT_WEB_PORT = 8501
+BOARD_RESET_REOPEN_DELAY_S = 8.0
 CSV_HEADER_PREFIXES = (
     "record,time_ms,temperature_c",
     "record,time_ms,temperature_history_c",
@@ -101,6 +102,21 @@ def parse_array(value: str) -> list[float]:
 
 def clean_line(raw: bytes) -> str:
     return raw.decode("utf-8", errors="replace").strip()
+
+
+def touch_1200_baud_reset(port: str) -> None:
+    ser = serial.Serial()
+    ser.port = port
+    ser.baudrate = 1200
+    ser.timeout = 0.25
+    ser.write_timeout = 0.25
+    ser.dtr = False
+    ser.rts = True
+    ser.open()
+    try:
+        time.sleep(0.25)
+    finally:
+        ser.close()
 
 
 class DeepcelParser:
@@ -525,9 +541,7 @@ class SerialReader:
                 return self.store.status()
 
             try:
-                with serial.Serial(port, 1200, timeout=0.25, write_timeout=0.25) as ser:
-                    ser.dtr = False
-                    time.sleep(0.25)
+                touch_1200_baud_reset(port)
             except (OSError, serial.SerialException) as exc:
                 self.start()
                 self.store.set_status(
@@ -539,7 +553,7 @@ class SerialReader:
                 )
                 return self.store.status()
 
-            time.sleep(3.0)
+            time.sleep(BOARD_RESET_REOPEN_DELAY_S)
             self.start()
             self.store.set_status(
                 state="connecting",

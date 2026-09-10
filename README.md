@@ -34,7 +34,7 @@ Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura, hu
 Sensores:
 
 - DHT20 por I2C para temperatura y humedad.
-- Sensor de luz digital I2C compatible en SDA/SCL. El firmware detecta TSL2561, BH1750 y VEML7700.
+- Sensor de luz digital I2C compatible en SDA/SCL. El firmware detecta TSL2561, BH1750, VEML7700 y SI114x/SI1145 en `0x60`.
 - Si el modulo fisico es `Grove - Light Sensor` a secas, Seeed lo documenta como analogico: debe ir a un pin analogico o a un ADC I2C externo. En SDA/SCL no aparece como dispositivo I2C.
 
 Validacion hardware del 2026-09-10 en Raspberry Pi: la MKR carga el sketch multisensor, configura la FPGA, pasa el selftest Q4.4 y mantiene muestras de DHT20. El escaneo I2C vio `0x19`, `0x38`, `0x3C`, `0x6B` y `0x77`; no vio un sensor de luz I2C soportado, por lo que la luz queda marcada como `NO_SENSOR` y se usa fallback hasta corregir el modulo/cableado.
@@ -72,7 +72,7 @@ No se usa `ArduinoLowPower` en el sketch definitivo porque dio problemas de esta
 
 La opcion principal es la app local en `http://localhost:8501`, que no necesita WiFi ni internet si se usa desde la propia Raspberry.
 
-La app web muestra medidas, predicciones, historicos, cuantizados Q4.4 y estados DHT20/luz. Incluye `Reset Serial` para reabrir el puerto y `Reset Board` para reiniciar la MKR por toque a 1200 baudios si el firmware quedase colgado.
+La app web muestra medidas, predicciones, historicos, cuantizados Q4.4 y estados DHT20/luz. Incluye `Reset Serial` para reabrir el puerto y `Reset Board` para reiniciar la MKR por toque a 1200 baudios si el firmware quedase colgado. El reset de placa espera unos segundos a que el bootloader USB vuelva al sketch.
 
 ThingsBoard queda como espejo opcional para demos con red: `serial_dashboard/deepcel_thingsboard_bridge.py` lee los eventos de la app local y publica telemetria en ThingsBoard sin abrir de nuevo el puerto serie.
 

@@ -55,7 +55,7 @@ La variante de respaldo de temperatura es `software/arduino/Temperature_real_low
 | DHT20 | Temperatura y humedad | I2C de la MKR Vidor, direccion habitual `0x38` |
 | Sensor de luz I2C digital | Luz para entrada/salida de la red Q4.4 | SDA/SCL de la MKR Vidor, 3.3 V y GND |
 
-El firmware detecta TSL2561, BH1750 y VEML7700. El modulo `Grove - Light Sensor` sin la palabra `Digital` es analogico segun Seeed; conectado directamente a SDA/SCL no sirve como I2C. Para ese modulo hay que cablear `SIG` a un pin analogico o usar un ADC I2C externo.
+El firmware detecta TSL2561, BH1750, VEML7700 y SI114x/SI1145 en `0x60`. El modulo `Grove - Light Sensor` sin la palabra `Digital` es analogico segun Seeed; conectado directamente a SDA/SCL no sirve como I2C. Para ese modulo hay que cablear `SIG` a un pin analogico o usar un ADC I2C externo.
 
 Validacion en Raspberry Pi del 2026-09-10: la MKR vio por I2C `0x19`, `0x38`, `0x3C`, `0x6B` y `0x77`. No aparecieron `0x29`, `0x23`, `0x5C` ni `0x10`, por lo que el firmware marco la luz como `NO_SENSOR` y uso el fallback `595.66`. No tratar ese valor como medida real de luz.
 
@@ -247,7 +247,7 @@ La web tiene dos acciones de recuperacion:
 | Accion | Uso |
 |---|---|
 | `Reset Serial` | Cierra y reabre el puerto serie; no reinicia la MKR. |
-| `Reset Board` | Ejecuta reset SAMD por toque a 1200 baudios, espera reinicio y reabre el puerto. |
+| `Reset Board` | Ejecuta reset SAMD por toque a 1200 baudios, espera varios segundos al bootloader USB y reabre el puerto. |
 
 ThingsBoard es opcional y se ejecuta como espejo en una segunda terminal. No abre el puerto serie; lee los eventos SSE de la app local y publica por HTTP:
 
