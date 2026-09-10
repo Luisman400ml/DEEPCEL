@@ -13,18 +13,18 @@ Este documento sirve para que Codex u otro agente retome el proyecto desde el re
   - Arduino core `arduino:samd` `1.8.14`
   - Arduino CLI `0.35.3`
 
-La variante definitiva actual es `software/arduino/Temperature_real_lowpower_hwtest/`: temperatura y humedad con DHT20, inferencia de temperatura en FPGA y salida serie CSV para la app Python. Las variantes de luz/ultralow quedan solo para comparativa historica.
+La variante definitiva actual es `software/arduino/Temperature_real_lowpower_hwtest/`: temperatura y humedad con DHT20, inferencia de temperatura en FPGA y salida serie CSV para la app Python. El arbol activo queda consolidado para trabajar solo en esta variante y en el proyecto Quartus asociado; las variantes historicas quedan disponibles en el historial Git, no como proyectos vivos dentro del repo.
 
 ## Estructura del repo
 
 | Area | Ruta | Uso |
 |---|---|---|
-| Hardware Quartus | `hardware/quartus/projects/` | Proyectos separados por variante; la base funcional para comparativa es `ANeural_Network_power25`. |
+| Hardware Quartus | `hardware/quartus/projects/ANeural_Network_power25_lowpower/` | Unico proyecto Quartus activo. |
 | Constraints Vidor | `hardware/quartus/constraints/MKRVIDOR4000/` | Constraints originales recuperados de la MKR Vidor 4000. |
 | RTL de referencia | `hardware/verilog_reference/common_rtl/` | HDL suelto historico; no asumir que es un proyecto Quartus completo. |
-| Arduino | `software/arduino/` | Sketches completos, cada uno en su carpeta compatible con Arduino IDE. |
+| Arduino | `software/arduino/Temperature_real_lowpower_hwtest/` | Unico sketch Arduino activo, compatible con Arduino IDE y Arduino CLI. |
 | Python/modelo | `software/python/base_model/` | Scripts y modelo Keras principales. |
-| Paquete multisensor | `software/python/Temperature_and_Light_Q4.4_ANN/` | Paquete original de entrenamiento/template. |
+| Paquete multisensor | `software/python/Temperature_and_Light_Q4.4_ANN/` | Paquete original de entrenamiento; sus plantillas Arduino/Quartus historicas se eliminaron del arbol activo. |
 | Informes | `docs/reports/` | Informes de Arduino, Quartus y estrategias de consumo. |
 | Evidencias | `docs/evidence/hardware_validation/` | Logs serie, compilacion, carga y snapshots. |
 | Capturas | `docs/captures/quartus/` | Capturas usadas por informes. |
@@ -44,26 +44,14 @@ La variante definitiva actual es `software/arduino/Temperature_real_lowpower_hwt
 | Bitstream Arduino generado | `software/arduino/Temperature_real_lowpower_hwtest/FPGA_Bitstream.h` |
 | Reporte de potencia | `hardware/quartus/projects/ANeural_Network_power25_lowpower/output_files/MKRVIDOR4000.pow.rpt` |
 
-Las demas variantes se conservan para comparativa:
-
-| Variante | Ruta Quartus | Ruta Arduino asociada |
-|---|---|---|
-| Base historica | `hardware/quartus/projects/ANeural_Network/` | `software/arduino/Data_prediction/` |
-| Base 25.1 temperatura | `hardware/quartus/projects/ANeural_Network_power25/` | `software/arduino/Temperature_real_base_hwtest/` |
-| Definitiva actual: lowpower 24 MHz temperatura | `hardware/quartus/projects/ANeural_Network_power25_lowpower/` | `software/arduino/Temperature_real_lowpower_hwtest/` |
-| Luz Q4.4 24 MHz | `hardware/quartus/projects/ANeural_Network_power25_lowpower_light_q4_4/` | `software/arduino/Temperature_light_lowpower_hwtest/` |
-| Luz Q4.4 6 MHz | `hardware/quartus/projects/ANeural_Network_power25_lowpower_light_q4_4_lowfreq_6mhz/` | `software/arduino/Temperature_light_lowpower_hwtest_lowfreq/` |
-| Luz Q4.4 6 MHz + SAMD idle | mismo Quartus de 6 MHz | `software/arduino/Temperature_light_lowpower_hwtest_lowfreq_samd_lowpower/` |
-| Ultralow secuencial 1 MHz + SAMD idle | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/` | `software/arduino/Temperature_light_ultralowpower_seq_1mhz_samd_lowpower/` |
-
-`hardware/quartus/projects/ANeural_Network/` queda como historico/template y no debe usarse como referencia principal de compilacion.
+No debe haber otros `.ino` ni otros `.qpf` activos en el repo. Si hace falta consultar `t1`, `t3`, luz o ultralow, recuperar esas variantes desde el historial Git, no recrearlas como rutas de trabajo.
 
 ## Sensores y conexiones
 
 | Sensor | Uso | Conexion esperada |
 |---|---|---|
 | DHT20 | Temperatura y humedad | I2C de la MKR Vidor, direccion habitual `0x38` |
-| Grove Light Sensor analogico | Luz en variantes historicas | `SIG -> A2`, mas `VCC` y `GND` |
+| Grove Light Sensor analogico | Historico/documentacion; no usado en el proyecto definitivo | `SIG -> A2`, mas `VCC` y `GND` |
 
 No conectar el Grove Light Sensor analogico a I2C. En el proyecto definitivo no se usa luz: solo DHT20, temperatura, humedad y prediccion de temperatura.
 
@@ -76,7 +64,7 @@ No conectar el Grove Light Sensor analogico a I2C. En el proyecto definitivo no 
 - Salidas:
   - `prediction_c`
 
-Aviso: las variantes de luz/ultralow trabajan en Q4.4 multisensor, pero no son la base actual. No mezclar formatos sin rehacer sketch, RTL, bitstream y selftest.
+No mezclar formatos sin rehacer sketch, RTL, bitstream y selftest.
 
 ## Protocolo Arduino/FPGA
 
@@ -106,14 +94,11 @@ Arduino escribe la temperatura, genera un pulso de `ready` y espera antes de lee
 
 Power Analyzer vectorless:
 
-| Variante | Potencia total | Core dinamica | Jerarquia `eco_nn_top:uut` |
+| Variante activa | Potencia total | Core dinamica | Jerarquia `eco_nn_top:uut` |
 |---|---:|---:|---:|
-| Base 25.1 | 234.21 mW | 45.81 mW | 22.86 mW |
-| Definitiva: lowpower 24 MHz | 212.53 mW | 24.51 mW | 4.71 mW |
-| Luz Q4.4 6 MHz | 206.64 mW | 18.77 mW | 0.96 mW |
-| Ultralow secuencial 1 MHz | 201.78 mW | 12.61 mW | 0.06 mW |
+| Lowpower 24 MHz temperatura | 212.53 mW | 24.51 mW | 4.71 mW |
 
-La confianza de Power Analyzer es `Low` porque no hay actividad real `.vcd`/`.saif`. No presentar esas cifras como medida real de placa completa.
+La confianza de Power Analyzer es `Low` porque no hay actividad real `.vcd`/`.saif`. No presentar esas cifras como medida real de placa completa. Las comparativas historicas estan en `docs/reports/`.
 
 ## Salida serie esperada
 
@@ -218,12 +203,12 @@ Si `COM4` esta ocupado, normalmente hay un monitor serie abierto desde Arduino I
 
 ## Reglas practicas para agentes
 
-- No asumir que `software/arduino/Temperature_real/` es el proyecto final; es historico de temperatura.
 - Trabajar por defecto sobre `software/arduino/Temperature_real_lowpower_hwtest/`; es el proyecto definitivo actual.
+- Trabajar en `main`; no usar `t1` como rama de desarrollo.
+- No crear nuevos sketches Arduino ni nuevos proyectos Quartus sin pedir confirmacion explicita.
 - No eliminar humedad: debe seguir midiendose e imprimiendose.
 - No cambiar `FPGA.begin(32, 2)` sin cambiar tambien top Quartus, sketch y selftest.
 - No reintroducir `ArduinoLowPower`/`LowPower.idle(...)` en el sketch definitivo.
 - No tratar los mW de Quartus como medida real de la placa completa.
 - No modificar el formato Q8.8 sin revalidar contra referencia software.
 - No borrar `output_files/` de la variante definitiva: contienen reportes y bitstream reproducibles.
-- El proyecto parcial `hardware/quartus/projects/ANeural_Network_power25_lowpower_light_q4_4_lowfreq/` esta ignorado y no debe usarse.

@@ -1,1 +1,0 @@
-Warning (10268): Verilog HDL information at neuron.v(16): always construct contains both blocking and non-blocking assignments File: C:/Users/PC/OneDrive/Escritorio/DEEPCEL/QuartusProject/ANeural_Network_power25_lowpower_light_q4_4_lowfreq_6mhz/neuron.v Line: 16
