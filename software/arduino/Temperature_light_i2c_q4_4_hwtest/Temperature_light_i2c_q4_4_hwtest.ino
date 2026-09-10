@@ -257,9 +257,6 @@ static bool readLightSensor(float& lightValue) {
   }
 
   lightSensor.failures++;
-  if (lightSensor.failures == 3) {
-    detectLightSensor();
-  }
   lightValue = lightSensor.lastValue;
   return false;
 }
@@ -332,6 +329,12 @@ static void printI2cScan() {
   }
 }
 
+static void startI2cBus() {
+  Wire.begin();
+  Wire.setClock(100000);
+  Wire.setTimeout(50);
+}
+
 static void handleSerialCommands() {
   while (Serial.available()) {
     switch (Serial.read()) {
@@ -374,11 +377,9 @@ static void waitUntilNextSample(unsigned long nowMs, unsigned long lastSampleSta
 
 static void recoverDht20Bus() {
   Wire.end();
-  delay(20);
-  Wire.begin();
-  Wire.setTimeout(50);
+  delay(50);
+  startI2cBus();
   sensor1.begin();
-  detectLightSensor();
 }
 
 void setup() {
@@ -400,11 +401,14 @@ void setup() {
       ;
   }
 
-  Wire.begin();
-  Wire.setTimeout(50);
+  startI2cBus();
   if (!sensor1.begin()) {
     Serial.println("ERROR: DHT20 not found on I2C address 0x38.");
+  } else {
+    sensor1.resetSensor();
+    Serial.println("DHT20 sensor detected.");
   }
+  delay(100);
   if (detectLightSensor()) {
     Serial.print("I2C light sensor detected: ");
     Serial.print(lightSensorName(lightSensor.kind));
