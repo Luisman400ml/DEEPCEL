@@ -163,6 +163,7 @@ Comandos serie:
 | `C` | Cambia a salida CSV. |
 | `P` | Vuelve a salida texto normal. |
 | `I` | Escanea el bus I2C y lista direcciones detectadas. |
+| `R` | Reinicia la MKR con `NVIC_SystemReset()`. |
 
 ## Dependencias Arduino
 
@@ -247,7 +248,7 @@ La web tiene dos acciones de recuperacion:
 | Accion | Uso |
 |---|---|
 | `Reset Serial` | Cierra y reabre el puerto serie; no reinicia la MKR. |
-| `Reset Board` | Ejecuta reset SAMD por toque a 1200 baudios, espera varios segundos al bootloader USB y reabre el puerto. |
+| `Reset Board` | Envia `R` al firmware, el sketch ejecuta `NVIC_SystemReset()`, espera el reinicio y reabre el puerto. |
 
 ThingsBoard es opcional y se ejecuta como espejo en una segunda terminal. No abre el puerto serie; lee los eventos SSE de la app local y publica por HTTP:
 

@@ -36,7 +36,7 @@ If the board changes port after a USB reset, the app waits and scans the availab
 
 Use the `Reset Serial` button if the MKR is unplugged, reconnects on a new USB device, or stops streaming. The button closes the current serial handle, scans/opens the port again, and sends `C` to restore CSV mode.
 
-Use `Reset Board` if the sketch or FPGA flow appears stuck. It closes the serial reader, performs the SAMD 1200 baud reset touch, waits for the MKR bootloader to return to the sketch, then opens the serial port again.
+Use `Reset Board` if the sketch or FPGA flow appears stuck but the firmware still handles serial commands. It sends command `R`, the sketch calls `NVIC_SystemReset()`, then the app reopens the serial port and restores CSV mode.
 
 ## Dependencies
 

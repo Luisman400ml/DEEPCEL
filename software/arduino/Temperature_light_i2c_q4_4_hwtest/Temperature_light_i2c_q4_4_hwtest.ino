@@ -5,6 +5,7 @@
 
 const unsigned long SAMPLE_INTERVAL_MS = 10000;
 const unsigned long WAIT_CHUNK_MS = 250;
+const unsigned long SERIAL_WAIT_TIMEOUT_MS = 5000;
 const unsigned long DHT_RETRY_DELAY_MS = 90;
 const uint8_t DHT_READ_ATTEMPTS = 3;
 const char BUILD_DESCRIPTION[] =
@@ -443,6 +444,9 @@ static bool readDht20Stable(float& temperature, float& humidity, const char*& dh
       return true;
     }
     if (attempt + 1 < DHT_READ_ATTEMPTS) {
+      if (status == DHT20_ERROR_READ_TIMEOUT) {
+        break;
+      }
       delay(DHT_RETRY_DELAY_MS);
     }
   }
@@ -480,6 +484,12 @@ static void handleSerialCommands() {
       case 'I':
         printI2cScan();
         break;
+      case 'R':
+        Serial.println("Board reset requested.");
+        Serial.flush();
+        delay(100);
+        NVIC_SystemReset();
+        break;
     }
   }
 }
@@ -512,7 +522,8 @@ static void recoverDht20Bus() {
 
 void setup() {
   Serial.begin(9600);
-  while (!Serial)
+  unsigned long serialWaitStartedMs = millis();
+  while (!Serial && millis() - serialWaitStartedMs < SERIAL_WAIT_TIMEOUT_MS)
     ;
 
   if (!FPGA.begin(32, 4)) {

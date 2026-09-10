@@ -36,7 +36,7 @@ except ImportError as exc:  # pragma: no cover - handled at runtime.
 
 DEFAULT_BAUD = 9600
 DEFAULT_WEB_PORT = 8501
-BOARD_RESET_REOPEN_DELAY_S = 8.0
+BOARD_RESET_REOPEN_DELAY_S = 5.0
 CSV_HEADER_PREFIXES = (
     "record,time_ms,temperature_c",
     "record,time_ms,temperature_history_c",
@@ -102,21 +102,6 @@ def parse_array(value: str) -> list[float]:
 
 def clean_line(raw: bytes) -> str:
     return raw.decode("utf-8", errors="replace").strip()
-
-
-def touch_1200_baud_reset(port: str) -> None:
-    ser = serial.Serial()
-    ser.port = port
-    ser.baudrate = 1200
-    ser.timeout = 0.25
-    ser.write_timeout = 0.25
-    ser.dtr = False
-    ser.rts = True
-    ser.open()
-    try:
-        time.sleep(0.25)
-    finally:
-        ser.close()
 
 
 class DeepcelParser:
@@ -525,9 +510,10 @@ class SerialReader:
                 state="resetting",
                 port=port,
                 baud=self.baud,
-                message="resetting MKR board through 1200 baud touch",
+                message="requesting MKR firmware reset",
                 connected_at=None,
             )
+            command_sent = self.send_command("R")
             self.stop()
             if not port:
                 self.start()
@@ -540,26 +526,13 @@ class SerialReader:
                 )
                 return self.store.status()
 
-            try:
-                touch_1200_baud_reset(port)
-            except (OSError, serial.SerialException) as exc:
-                self.start()
-                self.store.set_status(
-                    state="error",
-                    port=port,
-                    baud=self.baud,
-                    message=f"board reset failed: {exc}",
-                    connected_at=None,
-                )
-                return self.store.status()
-
             time.sleep(BOARD_RESET_REOPEN_DELAY_S)
             self.start()
             self.store.set_status(
                 state="connecting",
                 port=self.requested_port or port,
                 baud=self.baud,
-                message="board reset requested; reopening serial port",
+                message="board reset requested; reopening serial port" if command_sent else "serial command not sent; reopening serial port",
                 connected_at=None,
             )
             return self.store.status()
@@ -630,6 +603,8 @@ class SerialReader:
             with self._serial_lock:
                 self._serial = ser
             try:
+                ser.dtr = True
+                ser.rts = True
                 time.sleep(1.5)
                 if self.send_csv_command:
                     ser.write(b"C")
