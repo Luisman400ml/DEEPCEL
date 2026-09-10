@@ -2,9 +2,9 @@
 
 Lightweight Python app for live visualization of telemetry sent by the MKR Vidor 4000.
 
-The supported project is `software/arduino/Temperature_real_lowpower_hwtest`.
+The supported project is `software/arduino/Temperature_light_i2c_q4_4_hwtest`.
 
-The app opens the serial port, sends the `C` command to the sketch to enable CSV output, plots measured temperature, FPGA temperature prediction, humidity, Grove light ADC, and stores a local CSV capture.
+The app opens the serial port, sends the `C` command to the sketch to enable CSV output, plots measured temperature, FPGA temperature prediction, humidity, measured light, FPGA light prediction, and stores a local CSV capture.
 
 ThingsBoard support is optional and runs as a separate bridge so the offline dashboard can keep owning the serial port.
 
@@ -50,12 +50,17 @@ On the Raspberry Pi used for this project, `pyserial` was already installed.
 - `humidity_pct`
 - `light_adc`
 - `prediction_temperature_c`
+- `prediction_light_model`
+- `temperature_history_c`
+- `light_history_adc`
+- `light_status`
+- `light_sensor`
 
 The definitive sketch emits:
 
 ```text
-record,time_ms,temperature_c,humidity_rh_pct,light_adc,prediction_temperature_c
-DATA,12345,25.1250,53.5000,742,24.7500
+record,time_ms,temperature_history_c,humidity_rh_pct,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
+DATA,12345,"[25.1200,25.1300,25.1400,25.1500]",53.5000,"[742.00,750.00,755.00,760.00]",24.7500,380.0000,2,11,0,4,OK,TSL2561
 ```
 
 Logs are stored in `serial_dashboard/logs/`.
@@ -70,6 +75,6 @@ export DEEPCEL_TB_TOKEN="PASTE_DEVICE_ACCESS_TOKEN_HERE"
 python3 serial_dashboard/deepcel_thingsboard_bridge.py
 ```
 
-The bridge reads live samples from `http://127.0.0.1:8501/events` and publishes `temperature_c`, `humidity_pct`, `prediction_temperature_c`, `device_time_ms`, and `sequence` to ThingsBoard.
+The bridge reads live samples from `http://127.0.0.1:8501/events` and publishes temperature, humidity, measured light, FPGA predictions, Q4.4 values, `device_time_ms`, and `sequence` to ThingsBoard.
 
 See `serial_dashboard/THINGSBOARD.md` for the ThingsBoard dashboard layout and dry-run commands.

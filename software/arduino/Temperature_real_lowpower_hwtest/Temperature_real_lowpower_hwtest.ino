@@ -1,9 +1,7 @@
 #include "FPGA.h"   // This is the library specific to the Arduino MKR Vidor 4000. It allows the microcontroller (the SAMD21) to communicate directly with the FPGA integrated on the board using a JTAG connection.
 #include "DHT20.h"  //  This is the library that manages the DHT20 temperature and humidity sensor. It simplifies I2C communication with the sensor to retrieve clean data.
-#include <Wire.h>
 
 const unsigned long SAMPLE_INTERVAL_MS = 10000;
-const uint8_t LIGHT_SENSOR_PIN = A2;
 bool csvOutput = false;
 
 
@@ -30,22 +28,12 @@ const char* dht20StatusMessage(int status) {
   }
 }
 
-void recoverDht20Bus() {
-  Wire.end();
-  delay(20);
-  Wire.begin();
-  sensor1.begin();
-}
-
 #include "fpga_selftest.h"
 
 void setup() {
   Serial.begin(9600);
   while (!Serial)
     ;
-
-  analogReadResolution(10);
-  pinMode(LIGHT_SENSOR_PIN, INPUT);
 
   // FPGA INITIALIZATION
   // Configures the FPGA (JTAG communication parameters: register size and number of registers used)
@@ -72,13 +60,13 @@ void loop() {
     switch (Serial.read()) {
       case 'C':
         csvOutput = true;
-        Serial.println("record,time_ms,temperature_c,humidity_rh_pct,light_adc,prediction_temperature_c");
+        Serial.println("record,time_ms,temperature_c,humidity_rh_pct,prediction_c");
         break;
       case 'P':
         csvOutput = false;
         break;
       case 'T':
-        Serial.println("Build: Quartus 25.1 lowpower, DHT20 + Grove Light Sensor on A2 plotter/CSV");
+        Serial.println("Build: Quartus 25.1 lowpower, DHT20 plotter/CSV");
         runFpgaSelfTest();
         break;
     }
@@ -101,9 +89,6 @@ void loop() {
     Serial.print(" (");
     Serial.print(dht20StatusMessage(status));
     Serial.println(")");
-    if (status != DHT20_ERROR_LASTREAD) {
-      recoverDht20Bus();
-    }
     sampleIntervalMs = 2000;
     return;
   }
@@ -111,7 +96,6 @@ void loop() {
   // Both values belong to the same I2C measurement.
   float temperature = sensor1.getTemperature();
   float humidity = sensor1.getHumidity();
-  int lightAdc = analogRead(LIGHT_SENSOR_PIN);
   uint16_t temperatureQ8_8 = (uint16_t)(256 * temperature);
 
   FPGA.write(0, temperatureQ8_8);
@@ -131,17 +115,13 @@ void loop() {
     Serial.print(',');
     Serial.print(humidity, 4);
     Serial.print(',');
-    Serial.print(lightAdc);
-    Serial.print(',');
     Serial.println(predictionC, 4);
   } else {
-    Serial.print("Temperature_C:");
+    Serial.print("Temperatura_C:");
     Serial.print(temperature, 2);
-    Serial.print("\tPredictionTemperature_C:");
+    Serial.print("\tPrediccion_C:");
     Serial.print(predictionC, 2);
-    Serial.print("\tHumidity_pct:");
-    Serial.print(humidity, 2);
-    Serial.print("\tLight_ADC:");
-    Serial.println(lightAdc);
+    Serial.print("\tHumedad_pct:");
+    Serial.println(humidity, 2);
   }
 }

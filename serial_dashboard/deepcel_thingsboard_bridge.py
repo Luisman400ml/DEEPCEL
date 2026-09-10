@@ -26,7 +26,13 @@ DEFAULT_THINGSBOARD_HOST = "https://thingsboard.cloud"
 TELEMETRY_KEYS = (
     "temperature_c",
     "humidity_pct",
+    "light_adc",
     "prediction_temperature_c",
+    "prediction_light_model",
+    "temperature_q4_4",
+    "light_q4_4",
+    "prediction_temperature_q4_4",
+    "prediction_light_q4_4",
     "device_time_ms",
     "sequence",
 )

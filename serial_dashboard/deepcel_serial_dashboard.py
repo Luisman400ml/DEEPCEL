@@ -55,6 +55,8 @@ SAMPLE_FIELDS = (
     "light_q4_4",
     "prediction_temperature_q4_4",
     "prediction_light_q4_4",
+    "light_status",
+    "light_sensor",
     "temperature_history_c",
     "light_history_adc",
 )
@@ -155,6 +157,8 @@ class DeepcelParser:
             "light_q4_4": parse_int(row[8]),
             "prediction_temperature_q4_4": parse_int(row[9]),
             "prediction_light_q4_4": parse_int(row[10]),
+            "light_status": row[11].strip() if len(row) > 11 else None,
+            "light_sensor": row[12].strip() if len(row) > 12 else None,
         }
 
     def _parse_text(self, line: str) -> dict[str, Any] | None:
@@ -179,19 +183,23 @@ class DeepcelParser:
             self._text_record["temperature_history_c"] = history
             if history:
                 self._text_record["temperature_c"] = history[-1]
-        elif key == "LightHistory_ADC":
+        elif key in ("LightHistory_ADC", "LightHistory_value"):
             history = parse_array(value)
             self._text_record["light_history_adc"] = history
             if history:
                 self._text_record["light_adc"] = history[-1]
         elif key == "Temperature_C":
             self._text_record["temperature_c"] = parse_float(value)
-        elif key == "Light_ADC":
+        elif key in ("Light_ADC", "Light_value"):
             self._text_record["light_adc"] = parse_float(value)
         elif key == "PredictionTemperature_C":
             self._text_record["prediction_temperature_c"] = parse_float(value)
         elif key == "PredictionLight_model":
             self._text_record["prediction_light_model"] = parse_float(value)
+        elif key == "LightStatus":
+            status, _, rest = value.partition(" sensor=")
+            self._text_record["light_status"] = status.strip() or None
+            self._text_record["light_sensor"] = rest.strip() or None
         elif key == "Humidity_pct":
             self._text_record["humidity_pct"] = parse_float(value)
             record = self._text_record
@@ -214,10 +222,14 @@ class DeepcelParser:
                 record["prediction_temperature_c"] = parse_float(value)
             elif key in ("Humedad_pct", "Humidity_pct"):
                 record["humidity_pct"] = parse_float(value)
-            elif key == "Light_ADC":
+            elif key in ("Light_ADC", "Light_value"):
                 record["light_adc"] = parse_float(value)
             elif key == "PredictionLight_model":
                 record["prediction_light_model"] = parse_float(value)
+            elif key == "LightStatus":
+                status, _, rest = value.partition(" sensor=")
+                record["light_status"] = status.strip() or None
+                record["light_sensor"] = rest.strip() or None
 
         return record if record else None
 
@@ -286,6 +298,8 @@ class TelemetryStore:
                 "light_q4_4": fields.get("light_q4_4"),
                 "prediction_temperature_q4_4": fields.get("prediction_temperature_q4_4"),
                 "prediction_light_q4_4": fields.get("prediction_light_q4_4"),
+                "light_status": fields.get("light_status"),
+                "light_sensor": fields.get("light_sensor"),
                 "temperature_history_c": fields.get("temperature_history_c", []),
                 "light_history_adc": fields.get("light_history_adc", []),
                 "raw": raw,
@@ -975,6 +989,7 @@ INDEX_HTML = r"""<!doctype html>
         <div class="metric"><span>Pred. temp.</span><strong id="mPredTemp">-</strong></div>
         <div class="metric"><span>Humidity</span><strong id="mHum">-</strong></div>
         <div class="metric"><span>Light</span><strong id="mLight">-</strong></div>
+        <div class="metric"><span>Pred. light</span><strong id="mPredLight">-</strong></div>
         <div class="metric"><span>Last sample</span><strong id="mLast">-</strong></div>
       </div>
 
@@ -1002,7 +1017,8 @@ INDEX_HTML = r"""<!doctype html>
           <div class="panel-head">
             <h2>Light</h2>
             <div class="legend">
-              <span><i style="background: var(--amber)"></i>Grove A2</span>
+              <span><i style="background: var(--amber)"></i>I2C sensor</span>
+              <span><i style="background: var(--blue)"></i>FPGA</span>
             </div>
           </div>
           <canvas id="lightChart"></canvas>
@@ -1025,7 +1041,9 @@ INDEX_HTML = r"""<!doctype html>
                 <th>Temp C</th>
                 <th>Pred C</th>
                 <th>Humidity</th>
-                <th>Light ADC</th>
+                <th>Light</th>
+                <th>Pred light</th>
+                <th>Light status</th>
               </tr>
             </thead>
             <tbody id="dataRows"></tbody>
@@ -1176,6 +1194,7 @@ INDEX_HTML = r"""<!doctype html>
     ]);
     const lightChart = new LineChart("lightChart", [
       { field: "light_adc", color: "#ad7418" },
+      { field: "prediction_light_model", color: "#315f9e" },
     ]);
 
     function updateStatus(status) {
@@ -1208,7 +1227,8 @@ INDEX_HTML = r"""<!doctype html>
         $("mTemp").textContent = fmt(last.temperature_c, 2, " C");
         $("mPredTemp").textContent = fmt(last.prediction_temperature_c, 2, " C");
         $("mHum").textContent = fmt(last.humidity_pct, 2, " %");
-        $("mLight").textContent = fmt(last.light_adc, 0);
+        $("mLight").textContent = fmt(last.light_adc, 2);
+        $("mPredLight").textContent = fmt(last.prediction_light_model, 2);
         $("mLast").textContent = localClock(last.host_time_iso);
       }
       $("samplePill").textContent = `${samples.length} samples`;
@@ -1227,7 +1247,9 @@ INDEX_HTML = r"""<!doctype html>
           <td>${fmt(s.temperature_c, 2)}</td>
           <td>${fmt(s.prediction_temperature_c, 2)}</td>
           <td>${fmt(s.humidity_pct, 2)}</td>
-          <td>${fmt(s.light_adc, 0)}</td>
+          <td>${fmt(s.light_adc, 2)}</td>
+          <td>${fmt(s.prediction_light_model, 2)}</td>
+          <td>${s.light_status || "-"}</td>
         </tr>
       `);
       $("dataRows").innerHTML = rows.join("");

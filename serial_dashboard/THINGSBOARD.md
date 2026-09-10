@@ -23,7 +23,13 @@ The bridge publishes only values produced by the definitive sketch:
 |---|---|
 | `temperature_c` | DHT20 measured temperature |
 | `humidity_pct` | DHT20 measured relative humidity |
+| `light_adc` | Measured light value from the detected I2C light sensor; name kept for backwards-compatible logs |
 | `prediction_temperature_c` | FPGA temperature prediction |
+| `prediction_light_model` | FPGA light prediction in the model scale |
+| `temperature_q4_4` | Quantized temperature input sent to FPGA |
+| `light_q4_4` | Quantized light input sent to FPGA |
+| `prediction_temperature_q4_4` | Raw Q4.4 FPGA temperature prediction |
+| `prediction_light_q4_4` | Raw Q4.4 FPGA light prediction |
 | `device_time_ms` | MKR timestamp |
 | `sequence` | Local sample counter |
 
@@ -88,6 +94,7 @@ Recommended widgets:
 |---|---|
 | Time-series line chart | `temperature_c`, `prediction_temperature_c` |
 | Time-series line chart or gauge | `humidity_pct` |
-| Latest values card/table | `temperature_c`, `prediction_temperature_c`, `humidity_pct`, `device_time_ms` |
+| Time-series line chart | `light_adc`, `prediction_light_model` |
+| Latest values card/table | `temperature_c`, `prediction_temperature_c`, `humidity_pct`, `light_adc`, `prediction_light_model`, `device_time_ms` |
 
 Use a live time window such as last 10 or 30 minutes during lab demos.

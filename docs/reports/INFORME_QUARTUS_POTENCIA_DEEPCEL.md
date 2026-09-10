@@ -500,8 +500,8 @@ Validacion del 2026-09-09. Se ha anadido una version nueva separada del proyecto
 | Elemento | Ubicacion |
 |---|---|
 | Proyecto Quartus | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz` |
-| Sketch Arduino | `Temperature_light_ultralowpower_seq_1mhz_samd_lowpower` |
-| Bitstream embebido | `software/arduino/Temperature_light_ultralowpower_seq_1mhz_samd_lowpower/FPGA_Bitstream.h` |
+| Sketch Arduino | `software/arduino/Temperature_light_i2c_q4_4_hwtest` |
+| Bitstream embebido | `software/arduino/Temperature_light_i2c_q4_4_hwtest/FPGA_Bitstream.h` |
 | Power Analyzer | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.pow.rpt` |
 | Timing Analyzer | `hardware/quartus/projects/ANeural_Network_power25_ultralowpower_light_q4_4_seq_1mhz/output_files/MKRVIDOR4000.sta.rpt` |
 | Snapshot de evidencia | `../evidence/hardware_validation/quartus_snapshots/MKRVIDOR4000.ultralow_seq2mult_1mhz.pow.rpt` |
@@ -514,7 +514,7 @@ Validacion del 2026-09-09. Se ha anadido una version nueva separada del proyecto
 | Reloj de modelo a 1 MHz | `SYSTEM_PLL_altpll.v` genera `clk[0]` a 1 MHz para la red; `clk[1]` se mantiene a 120 MHz para el puente JTAG compatible con Vidor. | Reduce la potencia dinamica asociada al dominio del modelo sin romper la carga JTAG. |
 | Top minimo | `MKRVIDOR4000_top.v` deja sin actividad util HDMI, MIPI, SDRAM, Flash, NINA, PCIe y pines MKR no usados. | Evita conmutaciones innecesarias de perifericos de plantilla. |
 | Optimizacion de Quartus | `OPTIMIZATION_MODE` queda en `AGGRESSIVE POWER`. | Permite al fitter priorizar potencia frente a rendimiento. |
-| Bajo consumo SAMD21 | El sketch usa `ArduinoLowPower` con `LowPower.idle()` entre muestras de 10 s. | Reduce consumo del microcontrolador entre lecturas; no aparece en Power Analyzer porque Quartus solo estima la FPGA. |
+| Bajo consumo SAMD21 | El sketch usa espera estable por `delay()` entre muestras de 10 s. | Mantiene estable USB/I2C en la MKR; el ahorro principal validado aqui viene de FPGA/Quartus. |
 
 Se probo tambien una variante con un unico multiplicador reutilizado. Quartus estimo `201.89 mW`, ligeramente peor que la version final de dos multiplicadores (`201.78 mW`), por lo que se conserva la version de dos multiplicadores.
 
@@ -565,7 +565,7 @@ La version se compilo y cargo en la MKR Vidor 4000 conectada. La salida serie ob
 
 ```text
 FPGA successfully configured!
-Build: Quartus 25.1 ultralowpower light Q4.4 sequential MAC + 1 MHz NN clock + SAMD21 idle low power, DHT20 humidity, Grove Light Sensor on A2
+Build: Quartus 25.1 ultralowpower light Q4.4 sequential MAC + 1 MHz NN clock + stable SAMD delay wait, DHT20 humidity, I2C light sensor
 SELFTEST PASS multisensor_q4_4 vectors=128 reads=512 failures=0
 ```
 
@@ -575,21 +575,23 @@ El plot por defecto del monitor serie queda en ingles, con historicos como array
 
 ```text
 TemperatureHistory_C:[25.88,25.88,25.87,25.87]
-LightHistory_ADC:[952,512,889,862]
+LightHistory_value:[952.00,512.00,889.00,862.00]
 Temperature_C:25.87
-Light_ADC:862
+Light_value:862.00
 PredictionTemperature_C:24.61
 PredictionLight_model:380
+LightStatus:OK sensor=TSL2561
 Humidity_pct:53.98
 ```
 
 En modo CSV, activable enviando `C` por serie, la cabecera es:
 
 ```text
-record,time_ms,temperature_history_c,humidity_rh_pct,light_history_adc,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4
+record,time_ms,temperature_history_c,humidity_rh_pct,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
 ```
 
 La humedad del DHT20 se mantiene como medida y plot de Arduino, pero no entra en la red neuronal actual. Para que la humedad afecte a la prediccion habria que reentrenar el modelo, ampliar entradas en VHDL y regenerar la autoprueba.
+El valor de luz entra en la red Q4.4 solo si el firmware detecta un sensor de luz I2C compatible. Si el modulo fisico es el `Grove - Light Sensor` analogico, debe conectarse a una entrada analogica o a un ADC I2C externo.
 
 ### 20.5 Limitaciones
 
