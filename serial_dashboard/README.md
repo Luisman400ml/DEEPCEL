@@ -4,7 +4,7 @@ Lightweight Python app for live visualization of telemetry sent by the MKR Vidor
 
 The supported project is `software/arduino/Temperature_real_lowpower_hwtest`.
 
-The app opens the serial port, sends the `C` command to the sketch to enable CSV output, plots measured temperature, FPGA temperature prediction, humidity, and stores a local CSV capture.
+The app opens the serial port, sends the `C` command to the sketch to enable CSV output, plots measured temperature, FPGA temperature prediction, humidity, Grove light ADC, and stores a local CSV capture.
 
 ## Run On The Raspberry
 
@@ -46,13 +46,14 @@ On the Raspberry Pi used for this project, `pyserial` was already installed.
 
 - `temperature_c`
 - `humidity_pct`
+- `light_adc`
 - `prediction_temperature_c`
 
 The definitive sketch emits:
 
 ```text
-record,time_ms,temperature_c,humidity_rh_pct,prediction_c
-DATA,12345,25.1250,53.5000,24.7500
+record,time_ms,temperature_c,humidity_rh_pct,light_adc,prediction_temperature_c
+DATA,12345,25.1250,53.5000,742,24.7500
 ```
 
 Logs are stored in `serial_dashboard/logs/`.

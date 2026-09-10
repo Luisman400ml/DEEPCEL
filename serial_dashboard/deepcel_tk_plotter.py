@@ -342,6 +342,7 @@ class DeepcelTkApp:
             ("temperature_c", "Temperature"),
             ("prediction_temperature_c", "Pred. temp."),
             ("humidity_pct", "Humidity"),
+            ("light_adc", "Light"),
             ("last", "Last sample"),
         ]
         for col, (key, label) in enumerate(metric_defs):
@@ -361,6 +362,7 @@ class DeepcelTkApp:
         top.columnconfigure(0, weight=1)
         top.columnconfigure(1, weight=1)
         top.rowconfigure(0, weight=1)
+        top.rowconfigure(1, weight=1)
 
         self.temp_chart = LineChart(
             top,
@@ -373,13 +375,15 @@ class DeepcelTkApp:
         self.temp_chart.grid(row=0, column=0, sticky="nsew", padx=(0, 7), pady=(0, 7))
         self.humidity_chart = LineChart(top, "Humidity", [("humidity_pct", "DHT20", "#b8475a")])
         self.humidity_chart.grid(row=0, column=1, sticky="nsew", padx=(7, 0), pady=(0, 7))
+        self.light_chart = LineChart(top, "Light", [("light_adc", "Grove A2", "#ad7418")])
+        self.light_chart.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(7, 0))
 
         bottom = ttk.Notebook(panes)
         panes.add(bottom, weight=1)
 
         table_frame = ttk.Frame(bottom)
         bottom.add(table_frame, text="Data")
-        columns = ("time", "mcu", "temp", "pred_temp", "humidity")
+        columns = ("time", "mcu", "temp", "pred_temp", "humidity", "light")
         self.table = ttk.Treeview(table_frame, columns=columns, show="headings", height=8)
         labels = {
             "time": "Time",
@@ -387,6 +391,7 @@ class DeepcelTkApp:
             "temp": "Temp C",
             "pred_temp": "Pred C",
             "humidity": "Humidity",
+            "light": "Light ADC",
         }
         widths = {
             "time": 95,
@@ -394,6 +399,7 @@ class DeepcelTkApp:
             "temp": 80,
             "pred_temp": 80,
             "humidity": 80,
+            "light": 80,
         }
         for col in columns:
             self.table.heading(col, text=labels[col])
@@ -452,6 +458,7 @@ class DeepcelTkApp:
             text=fmt(sample.get("prediction_temperature_c"), 2, " C")
         )
         self.metric_labels["humidity_pct"].configure(text=fmt(sample.get("humidity_pct"), 2, " %"))
+        self.metric_labels["light_adc"].configure(text=fmt(sample.get("light_adc"), 0))
         self.metric_labels["last"].configure(text=clock_label(sample.get("host_time_iso")))
 
         values = (
@@ -460,6 +467,7 @@ class DeepcelTkApp:
             fmt(sample.get("temperature_c")),
             fmt(sample.get("prediction_temperature_c")),
             fmt(sample.get("humidity_pct")),
+            fmt(sample.get("light_adc"), 0),
         )
         self.table.insert("", 0, values=values)
         for item in self.table.get_children()[80:]:
@@ -468,6 +476,7 @@ class DeepcelTkApp:
         rows = list(self.samples)
         self.temp_chart.draw(rows)
         self.humidity_chart.draw(rows)
+        self.light_chart.draw(rows)
 
     def close(self) -> None:
         self.worker.stop()

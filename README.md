@@ -1,6 +1,6 @@
 # DEEPCEL
 
-Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura y humedad, prediccion de temperatura mediante red neuronal en FPGA y dashboard Python por puerto serie.
+Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura, humedad y luz analogica, prediccion de temperatura mediante red neuronal en FPGA y dashboard Python por puerto serie.
 
 ## Estructura del repositorio
 
@@ -32,13 +32,14 @@ Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura y h
 Sensores:
 
 - DHT20 por I2C para temperatura y humedad.
+- Grove Light Sensor analogico en `A2` para lectura de luz por ADC.
 
 Modelo:
 
 - Red Q8.8 con 4 entradas: historial temporal de temperatura.
 - 8 neuronas ocultas ReLU.
 - 1 salida: prediccion de temperatura.
-- La humedad se mide y se imprime, pero no entra en la red neuronal actual.
+- La humedad y la luz se miden y se imprimen, pero no entran en la red neuronal actual.
 
 ## Bajo consumo actual
 
@@ -48,6 +49,8 @@ La variante recomendada combina:
 - proyecto Quartus lowpower a 24 MHz;
 - top FPGA reducido con perifericos no usados sin actividad util;
 - salida serie texto/CSV para el dashboard Python.
+
+El bitstream no cambia por anadir luz analogica: la FPGA mantiene el mismo protocolo `FPGA.begin(32, 2)` y la misma red de prediccion de temperatura.
 
 Power Analyzer estima `212.53 mW` para la FPGA en la variante activa. La confianza del analisis sigue siendo `Low` porque no se usa actividad real `.vcd`/`.saif`.
 

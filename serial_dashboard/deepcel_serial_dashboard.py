@@ -122,12 +122,17 @@ class DeepcelParser:
             return None
 
         if len(row) >= 5 and row[2].strip() and not row[2].lstrip("-+.").startswith("["):
-            return {
+            record = {
                 "device_time_ms": parse_int(row[1]),
                 "temperature_c": parse_float(row[2]),
                 "humidity_pct": parse_float(row[3]),
-                "prediction_temperature_c": parse_float(row[4]),
             }
+            if len(row) >= 6:
+                record["light_adc"] = parse_float(row[4])
+                record["prediction_temperature_c"] = parse_float(row[5])
+            else:
+                record["prediction_temperature_c"] = parse_float(row[4])
+            return record
 
         if len(row) < 11:
             return None
@@ -810,7 +815,7 @@ INDEX_HTML = r"""<!doctype html>
     }
     .metrics {
       display: grid;
-      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
       gap: 10px;
       margin-bottom: 18px;
     }
@@ -969,6 +974,7 @@ INDEX_HTML = r"""<!doctype html>
         <div class="metric"><span>Temperature</span><strong id="mTemp">-</strong></div>
         <div class="metric"><span>Pred. temp.</span><strong id="mPredTemp">-</strong></div>
         <div class="metric"><span>Humidity</span><strong id="mHum">-</strong></div>
+        <div class="metric"><span>Light</span><strong id="mLight">-</strong></div>
         <div class="metric"><span>Last sample</span><strong id="mLast">-</strong></div>
       </div>
 
@@ -992,6 +998,15 @@ INDEX_HTML = r"""<!doctype html>
           </div>
           <canvas id="humChart"></canvas>
         </section>
+        <section class="panel full">
+          <div class="panel-head">
+            <h2>Light</h2>
+            <div class="legend">
+              <span><i style="background: var(--amber)"></i>Grove A2</span>
+            </div>
+          </div>
+          <canvas id="lightChart"></canvas>
+        </section>
       </div>
     </section>
 
@@ -1010,6 +1025,7 @@ INDEX_HTML = r"""<!doctype html>
                 <th>Temp C</th>
                 <th>Pred C</th>
                 <th>Humidity</th>
+                <th>Light ADC</th>
               </tr>
             </thead>
             <tbody id="dataRows"></tbody>
@@ -1158,6 +1174,9 @@ INDEX_HTML = r"""<!doctype html>
     const humChart = new LineChart("humChart", [
       { field: "humidity_pct", color: "#b8475a" },
     ]);
+    const lightChart = new LineChart("lightChart", [
+      { field: "light_adc", color: "#ad7418" },
+    ]);
 
     function updateStatus(status) {
       const dot = $("statusDot");
@@ -1189,6 +1208,7 @@ INDEX_HTML = r"""<!doctype html>
         $("mTemp").textContent = fmt(last.temperature_c, 2, " C");
         $("mPredTemp").textContent = fmt(last.prediction_temperature_c, 2, " C");
         $("mHum").textContent = fmt(last.humidity_pct, 2, " %");
+        $("mLight").textContent = fmt(last.light_adc, 0);
         $("mLast").textContent = localClock(last.host_time_iso);
       }
       $("samplePill").textContent = `${samples.length} samples`;
@@ -1196,6 +1216,7 @@ INDEX_HTML = r"""<!doctype html>
       renderRows();
       tempChart.draw(samples);
       humChart.draw(samples);
+      lightChart.draw(samples);
     }
 
     function renderRows() {
@@ -1206,6 +1227,7 @@ INDEX_HTML = r"""<!doctype html>
           <td>${fmt(s.temperature_c, 2)}</td>
           <td>${fmt(s.prediction_temperature_c, 2)}</td>
           <td>${fmt(s.humidity_pct, 2)}</td>
+          <td>${fmt(s.light_adc, 0)}</td>
         </tr>
       `);
       $("dataRows").innerHTML = rows.join("");

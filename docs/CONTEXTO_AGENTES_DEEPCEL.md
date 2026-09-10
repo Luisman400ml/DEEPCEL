@@ -13,7 +13,7 @@ Este documento sirve para que Codex u otro agente retome el proyecto desde el re
   - Arduino core `arduino:samd` `1.8.14`
   - Arduino CLI `0.35.3`
 
-La variante definitiva actual es `software/arduino/Temperature_real_lowpower_hwtest/`: temperatura y humedad con DHT20, inferencia de temperatura en FPGA y salida serie CSV para la app Python. El arbol activo queda consolidado para trabajar solo en esta variante y en el proyecto Quartus asociado; las variantes historicas quedan disponibles en el historial Git, no como proyectos vivos dentro del repo.
+La variante definitiva actual es `software/arduino/Temperature_real_lowpower_hwtest/`: temperatura y humedad con DHT20, luz analogica con Grove Light Sensor, inferencia de temperatura en FPGA y salida serie CSV para la app Python. El arbol activo queda consolidado para trabajar solo en esta variante y en el proyecto Quartus asociado; las variantes historicas quedan disponibles en el historial Git, no como proyectos vivos dentro del repo.
 
 ## Estructura del repo
 
@@ -51,9 +51,9 @@ No debe haber otros `.ino` ni otros `.qpf` activos en el repo. Si hace falta con
 | Sensor | Uso | Conexion esperada |
 |---|---|---|
 | DHT20 | Temperatura y humedad | I2C de la MKR Vidor, direccion habitual `0x38` |
-| Grove Light Sensor analogico | Historico/documentacion; no usado en el proyecto definitivo | `SIG -> A2`, mas `VCC` y `GND` |
+| Grove Light Sensor analogico | Luz por ADC, telemetria y plot | `SIG -> A2`, mas `VCC` y `GND` |
 
-No conectar el Grove Light Sensor analogico a I2C. En el proyecto definitivo no se usa luz: solo DHT20, temperatura, humedad y prediccion de temperatura.
+No conectar el Grove Light Sensor analogico a I2C. La luz se lee desde `A2` y se imprime junto al resto de telemetria. No entra en la red neuronal Q8.8 actual.
 
 ## Modelo neuronal
 
@@ -64,7 +64,7 @@ No conectar el Grove Light Sensor analogico a I2C. En el proyecto definitivo no 
 - Salidas:
   - `prediction_c`
 
-No mezclar formatos sin rehacer sketch, RTL, bitstream y selftest.
+No mezclar formatos sin rehacer sketch, RTL, bitstream y selftest. La lectura `light_adc` es una medida auxiliar del SAMD21, no una entrada/salida de la red actual.
 
 ## Protocolo Arduino/FPGA
 
@@ -113,14 +113,14 @@ FPGA successfully configured!
 Modo texto normal:
 
 ```text
-Temperatura_C:25.87	Prediccion_C:24.61	Humedad_pct:53.98
+Temperature_C:25.87	PredictionTemperature_C:24.61	Humidity_pct:53.98	Light_ADC:742
 ```
 
 Modo CSV para la app Python:
 
 ```text
-record,time_ms,temperature_c,humidity_rh_pct,prediction_c
-DATA,12345,25.8700,53.9800,24.6100
+record,time_ms,temperature_c,humidity_rh_pct,light_adc,prediction_temperature_c
+DATA,12345,25.8700,53.9800,742,24.6100
 ```
 
 Comandos serie:
