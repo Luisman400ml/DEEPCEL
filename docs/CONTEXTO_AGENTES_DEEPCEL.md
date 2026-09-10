@@ -194,12 +194,40 @@ cd C:\Users\PC\OneDrive\Escritorio\DEEPCEL
 
 Si `COM4` esta ocupado, normalmente hay un monitor serie abierto desde Arduino IDE o VS Code. Cerrar el monitor antes de subir.
 
+## Monitorizacion
+
+La app principal es local/offline y debe seguir funcionando sin WiFi:
+
+```bash
+cd /home/raspberrypi/Downloads/DEEPCEL
+python3 serial_dashboard/deepcel_serial_dashboard.py --serial-port /dev/ttyACM0
+```
+
+Abrir en la propia Raspberry:
+
+```text
+http://localhost:8501
+```
+
+ThingsBoard es opcional y se ejecuta como espejo en una segunda terminal. No abre el puerto serie; lee los eventos SSE de la app local y publica por HTTP:
+
+```bash
+export DEEPCEL_TB_HOST="https://thingsboard.cloud"
+export DEEPCEL_TB_TOKEN="TOKEN_DEL_DEVICE"
+python3 serial_dashboard/deepcel_thingsboard_bridge.py
+```
+
+No guardar tokens reales en el repo. Si no hay red/token, dejar ThingsBoard desactivado y usar solo la app local.
+
 ## Herramientas auxiliares
 
 | Fichero | Uso |
 |---|---|
 | `tools/Convert-VidorBitstream.ps1` | Convierte `MKRVIDOR4000.ttf` a `FPGA_Bitstream.h` invirtiendo bits dentro de cada byte. |
 | `tools/Capture-VidorSerial.ps1` | Captura salida serie de la MKR Vidor para logs. |
+| `serial_dashboard/deepcel_serial_dashboard.py` | Dashboard web local/offline sobre `localhost:8501`. |
+| `serial_dashboard/deepcel_thingsboard_bridge.py` | Puente opcional desde el dashboard local hacia ThingsBoard. |
+| `serial_dashboard/THINGSBOARD.md` | Guia de telemetria y widgets recomendados para ThingsBoard. |
 
 ## Reglas practicas para agentes
 
@@ -209,6 +237,8 @@ Si `COM4` esta ocupado, normalmente hay un monitor serie abierto desde Arduino I
 - No eliminar humedad: debe seguir midiendose e imprimiendose.
 - No cambiar `FPGA.begin(32, 2)` sin cambiar tambien top Quartus, sketch y selftest.
 - No reintroducir `ArduinoLowPower`/`LowPower.idle(...)` en el sketch definitivo.
+- No hacer depender la app local de ThingsBoard ni de WiFi; ThingsBoard debe ser opcional.
+- No hardcodear tokens de ThingsBoard; usar variables de entorno.
 - No tratar los mW de Quartus como medida real de la placa completa.
 - No modificar el formato Q8.8 sin revalidar contra referencia software.
 - No borrar `output_files/` de la variante definitiva: contienen reportes y bitstream reproducibles.

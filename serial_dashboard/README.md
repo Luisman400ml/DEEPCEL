@@ -6,6 +6,8 @@ The supported project is `software/arduino/Temperature_real_lowpower_hwtest`.
 
 The app opens the serial port, sends the `C` command to the sketch to enable CSV output, plots measured temperature, FPGA temperature prediction, humidity, and stores a local CSV capture.
 
+ThingsBoard support is optional and runs as a separate bridge so the offline dashboard can keep owning the serial port.
+
 ## Run On The Raspberry
 
 Local window on the Raspberry display:
@@ -56,3 +58,17 @@ DATA,12345,25.1250,53.5000,24.7500
 ```
 
 Logs are stored in `serial_dashboard/logs/`.
+
+## Optional ThingsBoard Mirror
+
+Keep the local dashboard running, then start the bridge from a second terminal:
+
+```bash
+export DEEPCEL_TB_HOST="https://thingsboard.cloud"
+export DEEPCEL_TB_TOKEN="PASTE_DEVICE_ACCESS_TOKEN_HERE"
+python3 serial_dashboard/deepcel_thingsboard_bridge.py
+```
+
+The bridge reads live samples from `http://127.0.0.1:8501/events` and publishes `temperature_c`, `humidity_pct`, `prediction_temperature_c`, `device_time_ms`, and `sequence` to ThingsBoard.
+
+See `serial_dashboard/THINGSBOARD.md` for the ThingsBoard dashboard layout and dry-run commands.

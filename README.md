@@ -12,7 +12,7 @@ Proyecto Arduino/FPGA para Arduino MKR Vidor 4000 con captura de temperatura y h
 | `software/arduino/Temperature_real_lowpower_hwtest/` | Unico sketch Arduino activo, listo para Arduino IDE/CLI. |
 | `software/python/base_model/` | Scripts y modelo Python principales. |
 | `software/python/Temperature_and_Light_Q4.4_ANN/` | Paquete original de entrenamiento multisensor; las plantillas Arduino/Quartus historicas se retiraron del arbol activo. |
-| `serial_dashboard/` | App Python/web para visualizar los datos recibidos por serie. |
+| `serial_dashboard/` | App Python/web offline y puente opcional hacia ThingsBoard. |
 | `docs/reports/` | Informes de Arduino, Quartus y estrategias de bajo consumo. |
 | `docs/captures/quartus/` | Capturas usadas en informes de Quartus. |
 | `docs/evidence/hardware_validation/` | Logs de compilacion, carga, serie y snapshots de reportes. |
@@ -53,9 +53,16 @@ Power Analyzer estima `212.53 mW` para la FPGA en la variante activa. La confian
 
 No se usa `ArduinoLowPower` en el sketch definitivo porque dio problemas de estabilidad con monitor serie. Las variantes anteriores quedan en el historial Git, no como proyectos activos dentro del arbol.
 
+## Monitorizacion
+
+La opcion principal es la app local en `http://localhost:8501`, que no necesita WiFi ni internet si se usa desde la propia Raspberry.
+
+ThingsBoard queda como espejo opcional para demos con red: `serial_dashboard/deepcel_thingsboard_bridge.py` lee los eventos de la app local y publica telemetria en ThingsBoard sin abrir de nuevo el puerto serie.
+
 ## Documentacion principal
 
 - `docs/CONTEXTO_AGENTES_DEEPCEL.md`
+- `serial_dashboard/THINGSBOARD.md`
 - `docs/reports/INFORME_QUARTUS_POTENCIA_DEEPCEL.md`
 - `docs/reports/INFORME_ARDUINO_DEEPCEL.md`
 - `docs/reports/ESTRATEGIAS_BAJO_CONSUMO_DEEPCEL.md`
