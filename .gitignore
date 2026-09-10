@@ -19,6 +19,7 @@ hardware/quartus/projects/ANeural_Network_power25_lowpower_light_q4_4_lowfreq/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+serial_dashboard/logs/
 
 # OS files
 Thumbs.db
