@@ -16,6 +16,7 @@ const float LIGHT_FALLBACK_VALUE = (LIGHT_MIN + LIGHT_MAX) * 0.5f;
 
 bool csvOutput = false;
 DHT20 sensor1;
+uint8_t consecutiveDhtErrors = 0;
 
 float temperatureHistory[4] = {0, 0, 0, 0};
 float lightHistory[4] = {0, 0, 0, 0};
@@ -437,15 +438,20 @@ void loop() {
 
   int status = sensor1.read();
   if (status != DHT20_OK) {
+    consecutiveDhtErrors++;
     Serial.print("DHT20 read error: ");
     Serial.print(status);
     Serial.print(" (");
     Serial.print(dht20StatusMessage(status));
     Serial.println(")");
+    if (status != DHT20_ERROR_LASTREAD && consecutiveDhtErrors >= 3) {
+      recoverDht20Bus();
+      consecutiveDhtErrors = 0;
+    }
     sampleIntervalMs = 2000;
-    recoverDht20Bus();
     return;
   }
+  consecutiveDhtErrors = 0;
 
   float temperature = sensor1.getTemperature();
   float humidity = sensor1.getHumidity();
