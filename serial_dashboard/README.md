@@ -36,6 +36,8 @@ If the board changes port after a USB reset, the app waits and scans the availab
 
 Use the `Reset Serial` button if the MKR is unplugged, reconnects on a new USB device, or stops streaming. The button closes the current serial handle, scans/opens the port again, and sends `C` to restore CSV mode.
 
+Use `Reset Board` if the sketch or FPGA flow appears stuck. It closes the serial reader, performs the SAMD 1200 baud reset touch, waits for the MKR to reboot, then opens the serial port again.
+
 ## Dependencies
 
 ```bash
@@ -47,20 +49,31 @@ On the Raspberry Pi used for this project, `pyserial` was already installed.
 ## Data Read
 
 - `temperature_c`
+- `device_time_ms`
+- `sequence`
+- `host_time_iso`
 - `humidity_pct`
+- `dht_status`
+- `dht_error_count`
+- `dht_last_status`
 - `light_adc`
 - `prediction_temperature_c`
 - `prediction_light_model`
+- `temperature_q4_4`
+- `light_q4_4`
+- `prediction_temperature_q4_4`
+- `prediction_light_q4_4`
 - `temperature_history_c`
 - `light_history_adc`
 - `light_status`
 - `light_sensor`
+- `raw`
 
 The definitive sketch emits:
 
 ```text
-record,time_ms,temperature_history_c,humidity_rh_pct,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
-DATA,12345,"[25.1200,25.1300,25.1400,25.1500]",53.5000,"[742.00,750.00,755.00,760.00]",24.7500,380.0000,2,11,0,4,OK,TSL2561
+record,time_ms,temperature_history_c,humidity_rh_pct,dht_status,dht_error_count,dht_last_status,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
+DATA,12345,"[25.1200,25.1300,25.1400,25.1500]",53.5000,OK,0,0,"[742.00,750.00,755.00,760.00]",24.7500,380.0000,2,11,0,4,OK,TSL2561
 ```
 
 Logs are stored in `serial_dashboard/logs/`.
@@ -75,6 +88,6 @@ export DEEPCEL_TB_TOKEN="PASTE_DEVICE_ACCESS_TOKEN_HERE"
 python3 serial_dashboard/deepcel_thingsboard_bridge.py
 ```
 
-The bridge reads live samples from `http://127.0.0.1:8501/events` and publishes temperature, humidity, measured light, FPGA predictions, Q4.4 values, `device_time_ms`, and `sequence` to ThingsBoard.
+The bridge reads live samples from `http://127.0.0.1:8501/events` and publishes temperature, humidity, measured light, FPGA predictions, Q4.4 values, DHT20 status, light sensor status, histories, `device_time_ms`, and `sequence` to ThingsBoard.
 
 See `serial_dashboard/THINGSBOARD.md` for the ThingsBoard dashboard layout and dry-run commands.

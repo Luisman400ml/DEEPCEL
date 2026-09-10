@@ -24,8 +24,12 @@ from typing import Any, Iterable
 DEFAULT_SOURCE = "http://127.0.0.1:8501"
 DEFAULT_THINGSBOARD_HOST = "https://thingsboard.cloud"
 TELEMETRY_KEYS = (
+    "host_time_iso",
     "temperature_c",
     "humidity_pct",
+    "dht_status",
+    "dht_error_count",
+    "dht_last_status",
     "light_adc",
     "prediction_temperature_c",
     "prediction_light_model",
@@ -33,6 +37,11 @@ TELEMETRY_KEYS = (
     "light_q4_4",
     "prediction_temperature_q4_4",
     "prediction_light_q4_4",
+    "light_status",
+    "light_sensor",
+    "temperature_history_c",
+    "light_history_adc",
+    "raw",
     "device_time_ms",
     "sequence",
 )
@@ -71,10 +80,25 @@ def numeric_or_none(value: Any) -> int | float | None:
     return number
 
 
+def telemetry_value_or_none(value: Any) -> int | float | str | bool | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        number = numeric_or_none(value)
+        return number if number is not None else value
+    if isinstance(value, (list, dict)):
+        return json.dumps(value, separators=(",", ":"))
+    return str(value)
+
+
 def telemetry_payload(sample: dict[str, Any]) -> dict[str, Any] | None:
-    values: dict[str, int | float] = {}
+    values: dict[str, int | float | str | bool] = {}
     for key in TELEMETRY_KEYS:
-        value = numeric_or_none(sample.get(key))
+        value = telemetry_value_or_none(sample.get(key))
         if value is not None:
             values[key] = value
 

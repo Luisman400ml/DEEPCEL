@@ -5,11 +5,14 @@
 
 const unsigned long SAMPLE_INTERVAL_MS = 10000;
 const unsigned long WAIT_CHUNK_MS = 250;
+const unsigned long DHT_RETRY_DELAY_MS = 90;
+const uint8_t DHT_READ_ATTEMPTS = 3;
 const char BUILD_DESCRIPTION[] =
     "Build: Quartus 25.1 ultralowpower light Q4.4 sequential MAC + 1 MHz NN clock + stable SAMD delay wait, DHT20 humidity, I2C light sensor";
 
 const float TEMP_MIN = 24.612081304273765f;
 const float TEMP_MAX = 37.95430094132428f;
+const float TEMP_FALLBACK_VALUE = (TEMP_MIN + TEMP_MAX) * 0.5f;
 const float LIGHT_MIN = 163.7478016239505f;
 const float LIGHT_MAX = 1027.5785826547694f;
 const float LIGHT_FALLBACK_VALUE = (LIGHT_MIN + LIGHT_MAX) * 0.5f;
@@ -17,6 +20,10 @@ const float LIGHT_FALLBACK_VALUE = (LIGHT_MIN + LIGHT_MAX) * 0.5f;
 bool csvOutput = false;
 DHT20 sensor1;
 uint8_t consecutiveDhtErrors = 0;
+uint16_t dhtErrorCount = 0;
+bool dhtHasValidSample = false;
+float lastTemperature = TEMP_FALLBACK_VALUE;
+float lastHumidity = 0.0f;
 
 float temperatureHistory[4] = {0, 0, 0, 0};
 float lightHistory[4] = {0, 0, 0, 0};
@@ -332,8 +339,47 @@ static void printI2cScan() {
 
 static void startI2cBus() {
   Wire.begin();
-  Wire.setClock(100000);
+  Wire.setClock(50000);
   Wire.setTimeout(50);
+}
+
+static void recoverDht20Bus();
+
+static bool readDht20Stable(float& temperature, float& humidity, const char*& dhtStatus, int& dhtLastStatus) {
+  int status = DHT20_OK;
+
+  for (uint8_t attempt = 0; attempt < DHT_READ_ATTEMPTS; ++attempt) {
+    status = sensor1.read();
+    if (status == DHT20_OK) {
+      temperature = sensor1.getTemperature();
+      humidity = sensor1.getHumidity();
+      lastTemperature = temperature;
+      lastHumidity = humidity;
+      dhtHasValidSample = true;
+      consecutiveDhtErrors = 0;
+      dhtLastStatus = status;
+      dhtStatus = "OK";
+      return true;
+    }
+    if (attempt + 1 < DHT_READ_ATTEMPTS) {
+      delay(DHT_RETRY_DELAY_MS);
+    }
+  }
+
+  dhtErrorCount++;
+  consecutiveDhtErrors++;
+  if (status != DHT20_ERROR_LASTREAD && consecutiveDhtErrors >= 3) {
+    recoverDht20Bus();
+    consecutiveDhtErrors = 0;
+    dhtStatus = dhtHasValidSample ? "RECOVERED_STALE" : "RECOVERING";
+  } else {
+    dhtStatus = dhtHasValidSample ? "STALE" : "NO_SENSOR";
+  }
+
+  temperature = lastTemperature;
+  humidity = lastHumidity;
+  dhtLastStatus = status;
+  return false;
 }
 
 static void handleSerialCommands() {
@@ -341,7 +387,7 @@ static void handleSerialCommands() {
     switch (Serial.read()) {
       case 'C':
         csvOutput = true;
-        Serial.println("record,time_ms,temperature_history_c,humidity_rh_pct,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor");
+        Serial.println("record,time_ms,temperature_history_c,humidity_rh_pct,dht_status,dht_error_count,dht_last_status,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor");
         break;
       case 'P':
         csvOutput = false;
@@ -404,9 +450,8 @@ void setup() {
 
   startI2cBus();
   if (!sensor1.begin()) {
-    Serial.println("ERROR: DHT20 not found on I2C address 0x38.");
+    Serial.println("WARN: DHT20 not found on I2C address 0x38.");
   } else {
-    sensor1.resetSensor();
     Serial.println("DHT20 sensor detected.");
   }
   delay(100);
@@ -436,25 +481,11 @@ void loop() {
   lastSampleStartedMs = sampleStartedMs;
   sampleIntervalMs = SAMPLE_INTERVAL_MS;
 
-  int status = sensor1.read();
-  if (status != DHT20_OK) {
-    consecutiveDhtErrors++;
-    Serial.print("DHT20 read error: ");
-    Serial.print(status);
-    Serial.print(" (");
-    Serial.print(dht20StatusMessage(status));
-    Serial.println(")");
-    if (status != DHT20_ERROR_LASTREAD && consecutiveDhtErrors >= 3) {
-      recoverDht20Bus();
-      consecutiveDhtErrors = 0;
-    }
-    sampleIntervalMs = 2000;
-    return;
-  }
-  consecutiveDhtErrors = 0;
-
-  float temperature = sensor1.getTemperature();
-  float humidity = sensor1.getHumidity();
+  float temperature = TEMP_FALLBACK_VALUE;
+  float humidity = 0.0f;
+  const char* dhtStatus = "NO_SENSOR";
+  int dhtLastStatus = DHT20_OK;
+  readDht20Stable(temperature, humidity, dhtStatus, dhtLastStatus);
   float lightValue = LIGHT_FALLBACK_VALUE;
   bool lightOk = readLightSensor(lightValue);
 
@@ -479,6 +510,12 @@ void loop() {
     printCsvHistoryArray(temperatureHistory, 4);
     Serial.print(',');
     Serial.print(humidity, 4);
+    Serial.print(',');
+    Serial.print(dhtStatus);
+    Serial.print(',');
+    Serial.print(dhtErrorCount);
+    Serial.print(',');
+    Serial.print(dhtLastStatus);
     Serial.print(',');
     printCsvHistoryArray(lightHistory, 2);
     Serial.print(',');
@@ -518,6 +555,12 @@ void loop() {
     Serial.print(lightStatus);
     Serial.print(" sensor=");
     Serial.println(lightSensorName(lightSensor.kind));
+    Serial.print("DHTStatus:");
+    Serial.print(dhtStatus);
+    Serial.print(" code=");
+    Serial.print(dhtLastStatus);
+    Serial.print(" errors=");
+    Serial.println(dhtErrorCount);
     Serial.print("Humidity_pct:");
     Serial.println(humidity, 2);
     Serial.println();

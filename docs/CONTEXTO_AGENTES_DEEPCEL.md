@@ -57,6 +57,8 @@ La variante de respaldo de temperatura es `software/arduino/Temperature_real_low
 
 El firmware detecta TSL2561, BH1750 y VEML7700. El modulo `Grove - Light Sensor` sin la palabra `Digital` es analogico segun Seeed; conectado directamente a SDA/SCL no sirve como I2C. Para ese modulo hay que cablear `SIG` a un pin analogico o usar un ADC I2C externo.
 
+Validacion en Raspberry Pi del 2026-09-10: la MKR vio por I2C `0x19`, `0x38`, `0x3C`, `0x6B` y `0x77`. No aparecieron `0x29`, `0x23`, `0x5C` ni `0x10`, por lo que el firmware marco la luz como `NO_SENSOR` y uso el fallback `595.66`. No tratar ese valor como medida real de luz.
+
 ## Modelo neuronal
 
 - Formato numerico actual: Q4.4 de 8 bits normalizado.
@@ -107,6 +109,21 @@ Power Analyzer vectorless:
 
 La confianza de Power Analyzer es `Low` porque no hay actividad real `.vcd`/`.saif`. No presentar esas cifras como medida real de placa completa. Las comparativas historicas estan en `docs/reports/`.
 
+## Validacion hardware mas reciente
+
+Fecha: 2026-09-10.
+
+| Comprobacion | Resultado |
+|---|---|
+| Carga Arduino en Raspberry | Correcta tras reset a bootloader por 1200 baudios. |
+| Configuracion FPGA | `FPGA successfully configured!` |
+| Selftest FPGA | `SELFTEST PASS multisensor_q4_4 vectors=128 reads=512 failures=0` |
+| DHT20 | Detectado en `0x38`; 7 muestras CSV/texto validas en 90 s, con 1 error I2C aislado recuperado. |
+| Sensor de luz I2C | No detectado; estado `NO_SENSOR sensor=none`. |
+| Parser Python | 9 muestras parseadas del log de validacion, con historicos y prediccion de luz. |
+
+La funcionalidad de red Q4.4 queda validada contra selftest. La medida real de luz queda pendiente de conectar un sensor de luz I2C soportado o un ADC I2C si se usa el Grove analogico.
+
 ## Salida serie esperada
 
 Baudios: `9600`.
@@ -127,14 +144,15 @@ Light_value:862.00
 PredictionTemperature_C:24.61
 PredictionLight_model:380.00
 LightStatus:OK sensor=TSL2561
+DHTStatus:OK code=0 errors=0
 Humidity_pct:53.98
 ```
 
 Modo CSV para la app Python:
 
 ```text
-record,time_ms,temperature_history_c,humidity_rh_pct,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
-DATA,12345,"[25.8700,25.8800,25.8900,25.9000]",53.9800,"[742.00,750.00,760.00,755.00]",24.6100,380.0000,2,11,0,4,OK,TSL2561
+record,time_ms,temperature_history_c,humidity_rh_pct,dht_status,dht_error_count,dht_last_status,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
+DATA,12345,"[25.8700,25.8800,25.8900,25.9000]",53.9800,OK,0,0,"[742.00,750.00,760.00,755.00]",24.6100,380.0000,2,11,0,4,OK,TSL2561
 ```
 
 Comandos serie:
@@ -223,6 +241,13 @@ Abrir en la propia Raspberry:
 ```text
 http://localhost:8501
 ```
+
+La web tiene dos acciones de recuperacion:
+
+| Accion | Uso |
+|---|---|
+| `Reset Serial` | Cierra y reabre el puerto serie; no reinicia la MKR. |
+| `Reset Board` | Ejecuta reset SAMD por toque a 1200 baudios, espera reinicio y reabre el puerto. |
 
 ThingsBoard es opcional y se ejecuta como espejo en una segunda terminal. No abre el puerto serie; lee los eventos SSE de la app local y publica por HTTP:
 

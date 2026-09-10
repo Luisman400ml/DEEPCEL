@@ -48,6 +48,9 @@ SAMPLE_FIELDS = (
     "device_time_ms",
     "temperature_c",
     "humidity_pct",
+    "dht_status",
+    "dht_error_count",
+    "dht_last_status",
     "prediction_temperature_c",
     "light_adc",
     "prediction_light_model",
@@ -140,7 +143,28 @@ class DeepcelParser:
             return None
 
         temperature_history = parse_array(row[2])
-        light_history = parse_array(row[4])
+        has_dht_status = len(row) >= 16 and not row[4].strip().startswith("[")
+        if has_dht_status:
+            light_history_index = 7
+            prediction_index = 8
+            q_index = 10
+            light_status_index = 14
+            dht_status = row[4].strip() or None
+            dht_error_count = parse_int(row[5])
+            dht_last_status = parse_int(row[6])
+        else:
+            light_history_index = 4
+            prediction_index = 5
+            q_index = 7
+            light_status_index = 11
+            dht_status = None
+            dht_error_count = None
+            dht_last_status = None
+
+        if len(row) <= q_index + 3:
+            return None
+
+        light_history = parse_array(row[light_history_index])
         temperature_c = temperature_history[-1] if temperature_history else None
         light_adc = light_history[-1] if light_history else None
 
@@ -148,17 +172,20 @@ class DeepcelParser:
             "device_time_ms": parse_int(row[1]),
             "temperature_history_c": temperature_history,
             "humidity_pct": parse_float(row[3]),
+            "dht_status": dht_status,
+            "dht_error_count": dht_error_count,
+            "dht_last_status": dht_last_status,
             "light_history_adc": light_history,
             "temperature_c": temperature_c,
             "light_adc": light_adc,
-            "prediction_temperature_c": parse_float(row[5]),
-            "prediction_light_model": parse_float(row[6]),
-            "temperature_q4_4": parse_int(row[7]),
-            "light_q4_4": parse_int(row[8]),
-            "prediction_temperature_q4_4": parse_int(row[9]),
-            "prediction_light_q4_4": parse_int(row[10]),
-            "light_status": row[11].strip() if len(row) > 11 else None,
-            "light_sensor": row[12].strip() if len(row) > 12 else None,
+            "prediction_temperature_c": parse_float(row[prediction_index]),
+            "prediction_light_model": parse_float(row[prediction_index + 1]),
+            "temperature_q4_4": parse_int(row[q_index]),
+            "light_q4_4": parse_int(row[q_index + 1]),
+            "prediction_temperature_q4_4": parse_int(row[q_index + 2]),
+            "prediction_light_q4_4": parse_int(row[q_index + 3]),
+            "light_status": row[light_status_index].strip() if len(row) > light_status_index else None,
+            "light_sensor": row[light_status_index + 1].strip() if len(row) > light_status_index + 1 else None,
         }
 
     def _parse_text(self, line: str) -> dict[str, Any] | None:
@@ -200,6 +227,8 @@ class DeepcelParser:
             status, _, rest = value.partition(" sensor=")
             self._text_record["light_status"] = status.strip() or None
             self._text_record["light_sensor"] = rest.strip() or None
+        elif key == "DHTStatus":
+            self._parse_dht_status(value, self._text_record)
         elif key == "Humidity_pct":
             self._text_record["humidity_pct"] = parse_float(value)
             record = self._text_record
@@ -207,6 +236,16 @@ class DeepcelParser:
             return record
 
         return None
+
+    def _parse_dht_status(self, value: str, record: dict[str, Any]) -> None:
+        parts = value.split()
+        record["dht_status"] = parts[0].strip() if parts else None
+        for item in parts[1:]:
+            key, _, raw = item.partition("=")
+            if key == "code":
+                record["dht_last_status"] = parse_int(raw)
+            elif key == "errors":
+                record["dht_error_count"] = parse_int(raw)
 
     def _parse_inline_text(self, line: str) -> dict[str, Any] | None:
         record: dict[str, Any] = {}
@@ -230,6 +269,8 @@ class DeepcelParser:
                 status, _, rest = value.partition(" sensor=")
                 record["light_status"] = status.strip() or None
                 record["light_sensor"] = rest.strip() or None
+            elif key == "DHTStatus":
+                self._parse_dht_status(value, record)
 
         return record if record else None
 
@@ -273,7 +314,7 @@ class TelemetryStore:
         with self._lock:
             self._raw_lines.append(line)
             self._status.last_line_at = now_iso()
-            if line.startswith(("DHT20 read error", "ERROR:")):
+            if line.startswith(("DHT20 read error", "ERROR:", "WARN:")):
                 self._status.message = line
                 status_payload = self.status()
         self.publish("raw", {"line": line})
@@ -291,6 +332,9 @@ class TelemetryStore:
                 "device_time_ms": fields.get("device_time_ms"),
                 "temperature_c": fields.get("temperature_c"),
                 "humidity_pct": fields.get("humidity_pct"),
+                "dht_status": fields.get("dht_status"),
+                "dht_error_count": fields.get("dht_error_count"),
+                "dht_last_status": fields.get("dht_last_status"),
                 "light_adc": fields.get("light_adc"),
                 "prediction_temperature_c": fields.get("prediction_temperature_c"),
                 "prediction_light_model": fields.get("prediction_light_model"),
@@ -454,6 +498,54 @@ class SerialReader:
                 port=self.requested_port,
                 baud=self.baud,
                 message="reopening serial port",
+                connected_at=None,
+            )
+            return self.store.status()
+
+    def board_reset(self) -> dict[str, Any]:
+        with self._restart_lock:
+            port = self.active_port or self.requested_port or detect_port()
+            self.store.set_status(
+                state="resetting",
+                port=port,
+                baud=self.baud,
+                message="resetting MKR board through 1200 baud touch",
+                connected_at=None,
+            )
+            self.stop()
+            if not port:
+                self.start()
+                self.store.set_status(
+                    state="waiting",
+                    port=self.requested_port,
+                    baud=self.baud,
+                    message="no serial port available for board reset",
+                    connected_at=None,
+                )
+                return self.store.status()
+
+            try:
+                with serial.Serial(port, 1200, timeout=0.25, write_timeout=0.25) as ser:
+                    ser.dtr = False
+                    time.sleep(0.25)
+            except (OSError, serial.SerialException) as exc:
+                self.start()
+                self.store.set_status(
+                    state="error",
+                    port=port,
+                    baud=self.baud,
+                    message=f"board reset failed: {exc}",
+                    connected_at=None,
+                )
+                return self.store.status()
+
+            time.sleep(3.0)
+            self.start()
+            self.store.set_status(
+                state="connecting",
+                port=self.requested_port or port,
+                baud=self.baud,
+                message="board reset requested; reopening serial port",
                 connected_at=None,
             )
             return self.store.status()
@@ -647,6 +739,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         elif parsed.path == "/api/reset":
             status = self.server.reader.restart()
             self.send_json({"ok": True, "status": status})
+        elif parsed.path == "/api/board-reset":
+            status = self.server.reader.board_reset()
+            self.send_json({"ok": True, "status": status})
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -829,7 +924,7 @@ INDEX_HTML = r"""<!doctype html>
     }
     .metrics {
       display: grid;
-      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
       gap: 10px;
       margin-bottom: 18px;
     }
@@ -871,6 +966,7 @@ INDEX_HTML = r"""<!doctype html>
       min-width: 0;
     }
     .panel.full { grid-column: 1 / -1; }
+    .latest-panel { margin-bottom: 14px; }
     .panel-head {
       display: flex;
       justify-content: space-between;
@@ -903,6 +999,31 @@ INDEX_HTML = r"""<!doctype html>
       display: block;
       width: 100%;
       height: 280px;
+    }
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+    }
+    .detail {
+      min-width: 0;
+      padding: 10px 12px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .detail span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .detail strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 650;
+      overflow-wrap: anywhere;
     }
     table {
       width: 100%;
@@ -943,11 +1064,13 @@ INDEX_HTML = r"""<!doctype html>
       header { align-items: flex-start; }
       .toolbar { justify-content: flex-start; }
       .metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .details-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
       .grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 620px) {
       header, main { padding-left: 14px; padding-right: 14px; }
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .details-grid { grid-template-columns: 1fr; }
       .metric { padding: 11px; }
       canvas { height: 230px; }
       h1 { font-size: 20px; }
@@ -961,6 +1084,7 @@ INDEX_HTML = r"""<!doctype html>
       <button class="primary" id="csvBtn" type="button">CSV</button>
       <button id="testBtn" type="button">Test</button>
       <button id="resetBtn" type="button">Reset Serial</button>
+      <button id="boardResetBtn" type="button">Reset Board</button>
       <a class="button" href="/download.csv">Export</a>
     </div>
   </header>
@@ -988,10 +1112,20 @@ INDEX_HTML = r"""<!doctype html>
         <div class="metric"><span>Temperature</span><strong id="mTemp">-</strong></div>
         <div class="metric"><span>Pred. temp.</span><strong id="mPredTemp">-</strong></div>
         <div class="metric"><span>Humidity</span><strong id="mHum">-</strong></div>
+        <div class="metric"><span>DHT20 status</span><strong id="mDhtStatus">-</strong></div>
         <div class="metric"><span>Light</span><strong id="mLight">-</strong></div>
         <div class="metric"><span>Pred. light</span><strong id="mPredLight">-</strong></div>
+        <div class="metric"><span>Light status</span><strong id="mLightStatus">-</strong></div>
         <div class="metric"><span>Last sample</span><strong id="mLast">-</strong></div>
       </div>
+
+      <section class="panel latest-panel">
+        <div class="panel-head">
+          <h2>Latest received data</h2>
+          <span class="pill">all serial fields</span>
+        </div>
+        <div class="details-grid" id="latestDetails"></div>
+      </section>
 
       <div class="grid">
         <section class="panel">
@@ -1039,11 +1173,20 @@ INDEX_HTML = r"""<!doctype html>
                 <th>Time</th>
                 <th>t MCU</th>
                 <th>Temp C</th>
+                <th>Temp history</th>
                 <th>Pred C</th>
                 <th>Humidity</th>
+                <th>DHT20 status</th>
+                <th>DHT20 errors</th>
                 <th>Light</th>
+                <th>Light history</th>
                 <th>Pred light</th>
                 <th>Light status</th>
+                <th>Light sensor</th>
+                <th>Temp Q4.4</th>
+                <th>Light Q4.4</th>
+                <th>Pred temp Q4.4</th>
+                <th>Pred light Q4.4</th>
               </tr>
             </thead>
             <tbody id="dataRows"></tbody>
@@ -1073,6 +1216,29 @@ INDEX_HTML = r"""<!doctype html>
     const fmt = (value, digits = 2, suffix = "") => {
       if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
       return `${Number(value).toFixed(digits)}${suffix}`;
+    };
+    const arrFmt = (value, digits = 2) => {
+      if (!Array.isArray(value) || !value.length) return "-";
+      return `[${value.map((item) => fmt(item, digits)).join(", ")}]`;
+    };
+    const escapeHtml = (value) => String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+    const fmtAny = (value, digits = 2, suffix = "") => {
+      if (value === null || value === undefined || value === "") return "-";
+      if (Array.isArray(value)) return arrFmt(value, digits);
+      const number = Number(value);
+      if (!Number.isNaN(number) && String(value).trim() !== "") {
+        return `${number.toFixed(digits)}${suffix}`;
+      }
+      return String(value);
+    };
+    const statusWithSensor = (status, sensor) => {
+      const cleanStatus = status || "-";
+      return sensor ? `${cleanStatus} / ${sensor}` : cleanStatus;
     };
     const localClock = (iso) => {
       if (!iso) return "-";
@@ -1196,12 +1362,34 @@ INDEX_HTML = r"""<!doctype html>
       { field: "light_adc", color: "#ad7418" },
       { field: "prediction_light_model", color: "#315f9e" },
     ]);
+    const latestFields = [
+      ["sequence", "Sequence", 0],
+      ["host_time_iso", "Host time", 0],
+      ["device_time_ms", "Board time ms", 0],
+      ["temperature_c", "Temperature C", 2],
+      ["temperature_history_c", "Temperature history C", 2],
+      ["humidity_pct", "Humidity %", 2],
+      ["dht_status", "DHT20 status", 0],
+      ["dht_error_count", "DHT20 errors", 0],
+      ["dht_last_status", "DHT20 last code", 0],
+      ["light_adc", "Light value", 2],
+      ["light_history_adc", "Light history", 2],
+      ["light_status", "Light status", 0],
+      ["light_sensor", "Light sensor", 0],
+      ["prediction_temperature_c", "Predicted temperature C", 2],
+      ["prediction_light_model", "Predicted light", 2],
+      ["temperature_q4_4", "Temperature Q4.4", 0],
+      ["light_q4_4", "Light Q4.4", 0],
+      ["prediction_temperature_q4_4", "Predicted temp Q4.4", 0],
+      ["prediction_light_q4_4", "Predicted light Q4.4", 0],
+      ["raw", "Raw sample", 0],
+    ];
 
     function updateStatus(status) {
       const dot = $("statusDot");
       dot.className = `dot ${status.state || ""}`;
-      $("statusText").textContent = `${status.state || "unknown"} · ${status.message || ""}`;
-      $("portPill").textContent = `${status.port || "-"} · ${status.baud || "-"} baud`;
+      $("statusText").textContent = `${status.state || "unknown"} - ${status.message || ""}`;
+      $("portPill").textContent = `${status.port || "-"} - ${status.baud || "-"} baud`;
       $("samplePill").textContent = `${status.samples || samples.length} samples`;
       $("logPill").textContent = status.log_path ? status.log_path.split("/").slice(-2).join("/") : "no log";
     }
@@ -1227,9 +1415,12 @@ INDEX_HTML = r"""<!doctype html>
         $("mTemp").textContent = fmt(last.temperature_c, 2, " C");
         $("mPredTemp").textContent = fmt(last.prediction_temperature_c, 2, " C");
         $("mHum").textContent = fmt(last.humidity_pct, 2, " %");
+        $("mDhtStatus").textContent = last.dht_status || "-";
         $("mLight").textContent = fmt(last.light_adc, 2);
         $("mPredLight").textContent = fmt(last.prediction_light_model, 2);
+        $("mLightStatus").textContent = statusWithSensor(last.light_status, last.light_sensor);
         $("mLast").textContent = localClock(last.host_time_iso);
+        renderLatestDetails(last);
       }
       $("samplePill").textContent = `${samples.length} samples`;
       $("rowsPill").textContent = `${samples.length} rows`;
@@ -1239,17 +1430,35 @@ INDEX_HTML = r"""<!doctype html>
       lightChart.draw(samples);
     }
 
+    function renderLatestDetails(sample) {
+      $("latestDetails").innerHTML = latestFields.map(([field, label, digits]) => `
+        <div class="detail">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(fmtAny(sample[field], digits))}</strong>
+        </div>
+      `).join("");
+    }
+
     function renderRows() {
       const rows = samples.slice(-80).reverse().map((s) => `
         <tr>
-          <td>${localClock(s.host_time_iso)}</td>
-          <td>${s.device_time_ms ?? "-"}</td>
+          <td>${escapeHtml(localClock(s.host_time_iso))}</td>
+          <td>${escapeHtml(fmtAny(s.device_time_ms, 0))}</td>
           <td>${fmt(s.temperature_c, 2)}</td>
+          <td>${escapeHtml(arrFmt(s.temperature_history_c, 2))}</td>
           <td>${fmt(s.prediction_temperature_c, 2)}</td>
           <td>${fmt(s.humidity_pct, 2)}</td>
+          <td>${escapeHtml(fmtAny(s.dht_status, 0))}</td>
+          <td>${escapeHtml(fmtAny(s.dht_error_count, 0))}</td>
           <td>${fmt(s.light_adc, 2)}</td>
+          <td>${escapeHtml(arrFmt(s.light_history_adc, 2))}</td>
           <td>${fmt(s.prediction_light_model, 2)}</td>
-          <td>${s.light_status || "-"}</td>
+          <td>${escapeHtml(fmtAny(s.light_status, 0))}</td>
+          <td>${escapeHtml(fmtAny(s.light_sensor, 0))}</td>
+          <td>${escapeHtml(fmtAny(s.temperature_q4_4, 0))}</td>
+          <td>${escapeHtml(fmtAny(s.light_q4_4, 0))}</td>
+          <td>${escapeHtml(fmtAny(s.prediction_temperature_q4_4, 0))}</td>
+          <td>${escapeHtml(fmtAny(s.prediction_light_q4_4, 0))}</td>
         </tr>
       `);
       $("dataRows").innerHTML = rows.join("");
@@ -1279,6 +1488,22 @@ INDEX_HTML = r"""<!doctype html>
       }
     }
 
+    async function resetBoard() {
+      const button = $("boardResetBtn");
+      button.disabled = true;
+      button.textContent = "Resetting Board";
+      try {
+        const response = await fetch("/api/board-reset", { method: "POST" });
+        const result = await response.json();
+        if (result.status) updateStatus(result.status);
+      } finally {
+        setTimeout(() => {
+          button.disabled = false;
+          button.textContent = "Reset Board";
+        }, 2200);
+      }
+    }
+
     document.querySelectorAll(".tab").forEach((button) => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("active"));
@@ -1292,6 +1517,7 @@ INDEX_HTML = r"""<!doctype html>
     $("csvBtn").addEventListener("click", () => command("C"));
     $("testBtn").addEventListener("click", () => command("T"));
     $("resetBtn").addEventListener("click", resetSerial);
+    $("boardResetBtn").addEventListener("click", resetBoard);
 
     async function loadInitialData() {
       const status = await fetch("/api/status").then((r) => r.json());

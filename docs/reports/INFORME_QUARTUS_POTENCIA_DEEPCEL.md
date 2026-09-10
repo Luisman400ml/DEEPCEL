@@ -581,13 +581,14 @@ Light_value:862.00
 PredictionTemperature_C:24.61
 PredictionLight_model:380
 LightStatus:OK sensor=TSL2561
+DHTStatus:OK code=0 errors=0
 Humidity_pct:53.98
 ```
 
 En modo CSV, activable enviando `C` por serie, la cabecera es:
 
 ```text
-record,time_ms,temperature_history_c,humidity_rh_pct,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
+record,time_ms,temperature_history_c,humidity_rh_pct,dht_status,dht_error_count,dht_last_status,light_history_value,prediction_temperature_c,prediction_light_model,temperature_q4_4,light_q4_4,prediction_temperature_q4_4,prediction_light_q4_4,light_status,light_sensor
 ```
 
 La humedad del DHT20 se mantiene como medida y plot de Arduino, pero no entra en la red neuronal actual. Para que la humedad afecte a la prediccion habria que reentrenar el modelo, ampliar entradas en VHDL y regenerar la autoprueba.
@@ -599,3 +600,21 @@ El valor de luz entra en la red Q4.4 solo si el firmware detecta un sensor de lu
 2. `ArduinoLowPower` reduce la actividad del SAMD21 entre muestras, pero no apaga la FPGA ni queda reflejado en los mW de Power Analyzer.
 3. Power Analyzer mantiene confianza `Low` por ausencia de actividad real `.vcd`/`.saif`.
 4. La funcionalidad validada es la interfaz actual: ventana de 4 muestras de temperatura y luz, prediccion Q4.4 de ambas salidas y humedad solo como dato auxiliar.
+
+## 21. Validacion Raspberry Pi con sensor de luz I2C
+
+Validacion del 2026-09-10 sobre la MKR Vidor conectada a la Raspberry Pi por USB.
+
+| Comprobacion | Resultado |
+|---|---|
+| Sketch cargado | `software/arduino/Temperature_light_i2c_q4_4_hwtest` |
+| Carga Arduino | Correcta tras reset a bootloader por 1200 baudios |
+| Configuracion FPGA | `FPGA successfully configured!` |
+| Selftest FPGA | `SELFTEST PASS multisensor_q4_4 vectors=128 reads=512 failures=0` |
+| Muestras capturadas | 7 filas `DATA` en modo CSV y 2 bloques texto en 90 s |
+| DHT20 | Detectado; 1 error I2C aislado recuperado sin detener el proceso |
+| Parser dashboard | 9 muestras parseadas correctamente |
+| Escaneo I2C | `0x19`, `0x38`, `0x3C`, `0x6B`, `0x77` |
+| Luz | No se detecto TSL2561/BH1750/VEML7700; salida `NO_SENSOR sensor=none` |
+
+La red neuronal y la interfaz Arduino/FPGA quedan validadas: temperatura y luz Q4.4 se escriben en registros separados y se leen dos predicciones. En la prueba fisica no se pudo validar medida real de luz porque el bus I2C no muestra un sensor de luz soportado. El valor de luz usado fue el fallback `595.66`, por lo que la prediccion de luz observada valida el camino de datos FPGA, no la captura optica real.
